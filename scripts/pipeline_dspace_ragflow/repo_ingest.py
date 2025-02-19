@@ -7,7 +7,6 @@ from prot_raggflow.dspace_api.autentification import authenticate_user
 from prot_raggflow.dspace_api.collections import get_collections
 from ragflow_sdk import RAGFlow
 from prot_raggflow.raggg.parsing import monitor_parsing, process_collections_in_parallel
-import threading
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
