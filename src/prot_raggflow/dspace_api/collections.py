@@ -1,3 +1,6 @@
+import pandas as pd
+from tqdm import tqdm
+
 def get_items_from_collection(session, collection_id, base_url_rest, verbose=False):
     items_url = f"{base_url_rest}/collections/{collection_id}/items"
     if verbose:
@@ -58,3 +61,58 @@ def select_collection(collections_ids):
                 print("Invalid index. Please enter a number within the range.")
         except ValueError:
             print("Please enter a valid number.")
+
+
+def get_collection_stats(session, base_url_rest, collection_id):
+    items_ids = get_items_from_collection(session, collection_id, base_url_rest)
+    total_size = 0
+    item_count = len(items_ids)
+    
+    for item_id in items_ids:
+        item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
+        response = session.get(item_url)
+        
+        if response.status_code == 200:
+            item_details = response.json()
+            bitstreams = item_details.get('bitstreams', [])
+            if bitstreams:
+                total_size += bitstreams[0].get('sizeBytes', 0)
+    
+    return item_count, total_size
+
+def generate_collection_stats(session, base_url_rest):
+    collections_ids = get_collections(session, base_url_rest)
+    data = []
+    total_documents = 0
+    total_size_all_collections = 0
+    
+    for collection_id in tqdm(collections_ids, desc="Processing collections"):
+        collection_url = f"{base_url_rest}/collections/{collection_id}"
+        response = session.get(collection_url)
+        
+        if response.status_code == 200:
+            collection_details = response.json()
+            collection_name = collection_details.get('name', 'No name')
+            
+            item_count, total_size = get_collection_stats(session, base_url_rest, collection_id)
+            total_documents += item_count
+            total_size_all_collections += total_size
+            
+            data.append({
+                'Collection Name': collection_name,
+                'Collection ID': collection_id,
+                'Number of Documents': item_count,
+                'Total Size (Bytes)': total_size
+            })
+    
+    df = pd.DataFrame(data)
+    
+    totals_row = pd.DataFrame({
+        'Collection Name': ['Total'],
+        'Collection ID': [''],
+        'Number of Documents': [total_documents],
+        'Total Size (Bytes)': [total_size_all_collections]
+    })
+    df = pd.concat([df, totals_row], ignore_index=True)
+    
+    return df
