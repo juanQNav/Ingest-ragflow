@@ -1,4 +1,4 @@
-#  prot-ragflow
+#  Ingest-ragflow
 
 This repository contains code for integrating and using various components, including the DSpace API and a knowledge base. The structure is organized as follows:
 
