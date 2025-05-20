@@ -4,7 +4,7 @@ This repository contains code for integrating and using various components, incl
 
 ```
 src/
-├── prot-ragflow/
+├── ingest_ragflow/
     ├── dspace_api/
     │   ├── __init__.py
     │   ├── README.md
