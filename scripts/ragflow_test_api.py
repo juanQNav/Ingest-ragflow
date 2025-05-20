@@ -1,5 +1,8 @@
 from ragflow_sdk import RAGFlow
-rag_object = RAGFlow(api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm", base_url="http://localhost:9380")
+rag_object = RAGFlow(
+    api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm",
+    base_url="http://localhost:9380"
+)
 
 name_assistants = []
 
@@ -23,12 +26,8 @@ print("Hello. What can I do for you?")
 while True:
     question = input("\n==================== JQNAV =====================\n> ")
     print("\n==================== AVRI =====================\n")
-    
+
     cont = ""
     for ans in session.ask(question, stream=True):
         print(ans.content[len(cont):], end='', flush=True)
         cont = ans.content
-
-
-
-

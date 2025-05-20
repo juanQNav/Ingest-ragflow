@@ -1,12 +1,14 @@
 """
-    This script uploads all the PDF files from a folder to RAGFlow and parses them automatically.
+    This script uploads all the PDF files from a folder to RAGFlow and parses
+    them automatically.
 """
 import argparse
 import asyncio
 from tqdm import tqdm
 from ragflow_sdk import RAGFlow
-from prot_raggflow.raggg.files import find_pdf_files, process_files_in_parallel
-from prot_raggflow.raggg.parsing import monitor_parsing
+from ingest_raggflow.raggg.files import (find_pdf_files,
+                                         process_files_in_parallel)
+from ingest_raggflow.raggg.parsing import monitor_parsing
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
@@ -15,13 +17,19 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
 
     PDF_FOLDER_PATH = args["folder_path"]
-    API_KEY = "ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm" # Replace with your API key
-    BASE_URL = "http://localhost:9380" # Replace with your RAGFlow URL
-    
+    API_KEY = (
+        "ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm"
+    )  # Replace with your API key
+    BASE_URL = "http://localhost:9380"  # Replace with your RAGFlow URL
+
     rag_object = RAGFlow(api_key=API_KEY, base_url=BASE_URL)
 
     # Ask user to create a new dataset or select an existing one
-    create_new_dataset = input("Create new dataset? (y/n): ").strip().lower() == 'y'
+    create_new_dataset = (
+        input("Create new dataset? (y/n): ")
+        .strip()
+        .lower() == 'y'
+    )
 
     if create_new_dataset:
         dataset = rag_object.create_dataset(name="test_knowledge")
@@ -58,9 +66,12 @@ if __name__ == "__main__":
             dataset.async_parse_documents([document_id])
 
         # Monitor parsing process
-        asyncio.run(monitor_parsing(dataset, document_ids, pbar))
+        asyncio.run(monitor_parsing(dataset, document_ids))
 
     # Status of documents
     documents = dataset.list_documents()
     for doc in documents:
-        print(f"Document: {doc.name}, State: {doc.run}, Fragments: {doc.chunk_count}")
+        print(
+            f"Document: {doc.name}, State: {doc.run}, "
+            f"Fragments: {doc.chunk_count}"
+        )

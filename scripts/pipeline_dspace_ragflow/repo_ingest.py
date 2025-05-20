@@ -3,19 +3,24 @@ import os
 import requests
 import asyncio
 from tqdm import tqdm
-from prot_raggflow.dspace_api.autentification import authenticate_user
-from prot_raggflow.dspace_api.collections import get_collections
+from ingest_raggflow.dspace_api.autentification import authenticate_user
+from ingest_raggflow.dspace_api.collections import (get_collections,
+                                                  select_collection)
 from ragflow_sdk import RAGFlow
-from prot_raggflow.raggg.parsing import monitor_parsing, process_collections_in_parallel
+from ingest_raggflow.raggg.parsing import (monitor_parsing,
+                                         process_collections_in_parallel)
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--email", required=True, help="Email for authentication")
-    ap.add_argument("--password", required=True, help="Password for authentication")
-    ap.add_argument("--folder_path", required=True, help="Folder path for downloaded files")
+    ap.add_argument("--password", required=True,
+                    help="Password for authentication")
+    ap.add_argument("--folder_path", required=True,
+                    help="Folder path for downloaded files")
     ap.add_argument("--apikey", required=True, help="API key for RAGFlow")
     ap.add_argument("--ragflow_url", required=True, help="RAGFlow URL")
-    ap.add_argument("--max_tasks", default=8, type=int, help="Maximum number of concurrent tasks")
+    ap.add_argument("--max_tasks", default=8, type=int,
+                    help="Maximum number of concurrent tasks")
 
     args = vars(ap.parse_args())
 
@@ -36,8 +41,11 @@ if __name__ == "__main__":
     # Authentication
     authenticate_user(session, EMAIL, PASSWORD, BASE_URL_REST)
     print("Getting collections...")
-    collections_ids = get_collections(session, BASE_URL_REST)
-    print(f"Found {len(collections_ids)} collections.")
+    collections_ids = get_collections(session, BASE_URL_REST, verbose=True)
+    if collections_ids is not None:
+        print(f"Found {len(collections_ids)} collections.")
+    else:
+        print("No collections found.")
 
     # Initialize RAGFlow
     API_KEY = args["apikey"]
@@ -45,7 +53,8 @@ if __name__ == "__main__":
     rag_object = RAGFlow(api_key=API_KEY, base_url=RAG_URL)
 
     # Choose or create dataset
-    create_new_dataset = input("Create new dataset? (y/n): ").strip().lower() == 'y'
+    create_new_dataset = input(
+        "Create new dataset? (y/n): ").strip().lower() == 'y'
 
     if create_new_dataset:
         dataset = rag_object.create_dataset(name="test_knowledge")
@@ -69,6 +78,7 @@ if __name__ == "__main__":
 
     # List of documents
     document_ids = []
+    collections_ids = [select_collection(collections_ids)]
 
     # Retrieve items from collections and process them in parallel
     process_collections_in_parallel(
@@ -91,6 +101,7 @@ if __name__ == "__main__":
     print("\nFinal Summary:")
     print("-" * 50)
     for doc in documents:
-        print(f"📄 {doc.name} | Status: {doc.run} | Fragments: {doc.chunk_count}")
+        print(f"📄 {doc.name} | Status: {doc.run} |\
+               Fragments: {doc.chunk_count}")
     print("-" * 50)
     print("Process completed successfully.")
