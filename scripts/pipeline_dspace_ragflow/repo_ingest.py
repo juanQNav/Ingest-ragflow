@@ -5,10 +5,10 @@ import asyncio
 from tqdm import tqdm
 from ingest_raggflow.dspace_api.autentification import authenticate_user
 from ingest_raggflow.dspace_api.collections import (get_collections,
-                                                  select_collection)
+                                                    select_collection)
 from ragflow_sdk import RAGFlow
 from ingest_raggflow.raggg.parsing import (monitor_parsing,
-                                         process_collections_in_parallel)
+                                           process_collections_in_parallel)
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
