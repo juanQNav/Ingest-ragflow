@@ -176,5 +176,8 @@ cython_debug/
 # pdf
 *.pdf
 
+# txt files
+*.txt
+
 #notebooks
 *.ipynb
