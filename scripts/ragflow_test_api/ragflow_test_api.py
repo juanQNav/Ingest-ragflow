@@ -1,13 +1,13 @@
 from ragflow_sdk import RAGFlow
+
 rag_object = RAGFlow(
-    api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm",
-    base_url="http://localhost:9380"
+    api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm", base_url="http://localhost:9380"
 )
 
 name_assistants = []
 
 for i, assistant in enumerate(rag_object.list_chats()):
-    print(f'id ({i}): {assistant.name} ')
+    print(f"id ({i}): {assistant.name} ")
     name_assistants.append(assistant.name)
 
 id_n = int(input("Enter the id of the assistant you want to test: "))
@@ -29,5 +29,5 @@ while True:
 
     cont = ""
     for ans in session.ask(question, stream=True):
-        print(ans.content[len(cont):], end='', flush=True)
+        print(ans.content[len(cont) :], end="", flush=True)
         cont = ans.content

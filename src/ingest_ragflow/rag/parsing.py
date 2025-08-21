@@ -1,13 +1,15 @@
 import asyncio
-import requests
-import time
 import os
 import threading
-from tqdm import tqdm
-from ingest_raggflow.raggg.files import generate_document_list
-from ingest_raggflow.dspace_api.collections import get_items_from_collection
-from ingest_raggflow.dspace_api.files import retrieve_item_file
+import time
 from concurrent.futures import ThreadPoolExecutor
+
+import requests
+from tqdm import tqdm
+
+from ingest_ragflow.dspace_api.collections import get_items_from_collection
+from ingest_ragflow.dspace_api.files import retrieve_item_file
+from ingest_ragflow.rag.files import generate_document_list
 
 
 def upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids):
@@ -28,31 +30,40 @@ def upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids):
         tqdm.write(f"[ERROR] Unexpected error: {e}")
 
     with lock:
-        tqdm.write(f"[PROC] Item {os.path.basename(file_path)} \
-                   processed successfully.")
+        tqdm.write(
+            f"[PROC] Item {os.path.basename(file_path)} \
+                   processed successfully."
+        )
 
 
-def process_collections_in_parallel(session, base_url, base_url_rest,
-                                    collections_ids, folder_path,
-                                    ragflow_dataset, document_ids,
-                                    max_concurrent_tasks=5):
+def process_collections_in_parallel(
+    session,
+    base_url,
+    base_url_rest,
+    collections_ids,
+    folder_path,
+    ragflow_dataset,
+    document_ids,
+    max_concurrent_tasks=5,
+):
     semaphore = threading.Semaphore(max_concurrent_tasks)
     lock = threading.Lock()
 
     def process_item(item_id, position):
         with semaphore:
-            file_path = retrieve_item_file(session, base_url, base_url_rest,
-                                           item_id, folder_path, position)
-            if file_path and file_path.endswith('.pdf'):
-                upload_and_parse_file(file_path, ragflow_dataset, lock,
-                                      document_ids)
+            file_path = retrieve_item_file(
+                session, base_url, base_url_rest, item_id, folder_path, position
+            )
+            if file_path and file_path.endswith(".pdf"):
+                upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids)
 
     print("Getting items from collections...")
     with ThreadPoolExecutor() as executor:
         items_ids = []
         for id_collection in collections_ids:
-            items = get_items_from_collection(session, id_collection,
-                                              base_url_rest, verbose=False)
+            items = get_items_from_collection(
+                session, id_collection, base_url_rest, verbose=False
+            )
             if items is not None:
                 items_ids.extend(items)
 
@@ -76,8 +87,9 @@ def get_documents_map(dataset, document_ids):
 async def monitor_parsing(dataset, document_ids):
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
-        doc_id: tqdm(total=100.00, desc=f"{doc_name[:30]}[...].pdf",
-                     position=i, leave=True)
+        doc_id: tqdm(
+            total=100.00, desc=f"{doc_name[:30]}[...].pdf", position=i, leave=True
+        )
         for i, (doc_id, doc_name) in enumerate(documents_map.items())
     }
 
@@ -98,7 +110,8 @@ async def monitor_parsing(dataset, document_ids):
                 if doc.run == "UNSTART":
                     tqdm.write(
                         f"[INFO] Retrying to parse document {doc.name}\
-                        (ID: {doc.id})...")
+                        (ID: {doc.id})..."
+                    )
                     dataset.async_parse_documents([doc.id])
 
                     document_ids.append(doc.id)
@@ -106,7 +119,7 @@ async def monitor_parsing(dataset, document_ids):
                         total=100.00,
                         desc=f"{doc.name[:30]}[...].pdf",
                         position=len(progress_bars),
-                        leave=True
+                        leave=True,
                     )
 
                     all_done = False

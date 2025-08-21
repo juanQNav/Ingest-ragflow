@@ -1,14 +1,16 @@
 # Module dspace_api
 
-This module provides a Python interface to interact with the DSpace REST API (UASLP), allowing authentication, collection retrieval, item retrieval, and file downloads.
+This module provides a Python interface to interact with the DSpace REST API
+(UASLP), allowing authentication, collection retrieval, item retrieval, and
+file downloads.
 
 ## Module Structure
 
-```
+```md
 dspace_api/
-├── __init__.py
+├── **init**.py
 ├── README.md
-├── __init__.py
+├── **init**.py
 ├── autentification.py
 ├── collections.py
 ├── files.py
@@ -33,7 +35,7 @@ pip install requests tqdm
 ### Authentication
 
 ```python
-from prot_raggflow.dspace_api.autentification import authenticate_user
+from ingest_ragflow.dspace_api.autentification import authenticate_user
 import requests
 
 session = requests.Session()
@@ -47,7 +49,7 @@ authenticate_user(session, email, password, base_url_rest)
 ### Retrieve Collections
 
 ```python
-from prot_raggflow.dspace_api.collections import get_collections
+from ingest_ragflow.dspace_api.collections import get_collections
 
 collections = get_collections(session, base_url_rest)
 print("Available collections:", collections)
@@ -56,7 +58,7 @@ print("Available collections:", collections)
 ### Retrieve Items from a Collection
 
 ```python
-from prot_raggflow.dspace_api.collections import get_items_from_collection
+from ingest_ragflow.dspace_api.collections import get_items_from_collection
 
 collection_id = "COLLECTION_UUID"
 items = get_items_from_collection(session, collection_id, base_url_rest)
@@ -66,10 +68,11 @@ print("Items in the collection:", items)
 ### Download Files from Items
 
 ```python
-from prot_raggflow.dspace_api.files import fetch_and_download_files
+from ingest_ragflow.dspace_api.files import fetch_and_download_files
 
 output_path = "./downloads"
-fetch_and_download_files(session, "https://your-dspace.edu", base_url_rest, items, output_path)
+fetch_and_download_files(session, "https://your-dspace.edu", base_url_rest,
+items, output_path)
 ```
 
 ## DSpace API Endpoints Used

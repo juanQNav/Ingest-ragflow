@@ -1,16 +1,19 @@
-# RAGGG Module
+# RAG Module
 
-This module provides functionalities for file manipulation and processing within the `prot_raggflow` project. It includes tools for reading, searching, and parallel processing of files, as well as functions related to process monitoring.
+This module provides functionalities for file manipulation and processing
+within the `ingest_ragflow` project. It includes tools for reading, searching,
+and parallel processing of files, as well as functions related to process
+monitoring.
 
 ## Module Structure
 
-The `raggg` module contains the following files:
+The `rag` module contains the following files:
 
-```
-raggg/
-├── __init__.py
+```md
+rag/
+├── _init_.py
 ├── README.md
-├── __init__.py
+├── _init_.py
 ├── files.py
 ├── parsing.py
 ```
@@ -31,16 +34,16 @@ pip install ragflow-sdk
 - **Read a binary file:**
 
   ```python
-  from prot_raggflow.raggg.files import read_binary_file
-  
+  from ingest_ragflow.rag.files import read_binary_file
+
   content = read_binary_file("file.pdf")
   ```
 
 - **Find PDF files in a directory:**
 
   ```python
-  from prot_raggflow.raggg.files import find_pdf_files
-  
+  from ingest_ragflow.rag.files import find_pdf_files
+
   pdfs = find_pdf_files("./documents")
   print(pdfs)
   ```
@@ -48,8 +51,8 @@ pip install ragflow-sdk
 - **Process files in parallel:**
 
   ```python
-  from prot_raggflow.raggg.files import process_files_in_parallel
-  
+  from ingest_ragflow.rag.files import process_files_in_parallel
+
   results = process_files_in_parallel(pdfs)
   ```
 
@@ -59,7 +62,7 @@ pip install ragflow-sdk
 
   ```python
   import asyncio
-  from prot_raggflow.raggg.parsing import monitor_parsing
-  
+  from ingest_ragflow.rag.parsing import monitor_parsing
+
   asyncio.run(monitor_parsing(dataset, document_ids, progress_bar))
   ```
