@@ -9,9 +9,9 @@ from ingest_ragflow.dspace_api.collections import generate_collection_stats
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--email", required=True, help="Email for authentication")
-    ap.add_argument("--password", required=True, help="Password for authentication")
-    ap.add_argument("--output", required=True, help="Output csv path")
+    ap.add_argument("-email", required=True, help="Email for authentication")
+    ap.add_argument("-password", required=True, help="Password for authentication")
+    ap.add_argument("-output", required=True, help="Output csv path")
 
     args = vars(ap.parse_args())
 

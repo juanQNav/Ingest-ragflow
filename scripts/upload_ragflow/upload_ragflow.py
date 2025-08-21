@@ -14,7 +14,7 @@ from ingest_ragflow.rag.parsing import monitor_parsing
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--folder_path", required=True, help="Folder path")
+    ap.add_argument("-folder_path", required=True, help="Folder path")
 
     args = vars(ap.parse_args())
 

@@ -17,9 +17,9 @@ from ingest_ragflow.dspace_api.files import fetch_and_download_files
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--email", required=True, help="Email for authentication")
-    ap.add_argument("--password", required=True, help="Password for authentication")
-    ap.add_argument("--output", required=True, help="Output path for downloaded files")
+    ap.add_argument("-email", required=True, help="Email for authentication")
+    ap.add_argument("-password", required=True, help="Password for authentication")
+    ap.add_argument("-output", required=True, help="Output path for downloaded files")
 
     args = vars(ap.parse_args())
 
