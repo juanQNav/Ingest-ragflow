@@ -5,6 +5,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
+from ragflow_sdk.modules.dataset import DataSet
+from requests import Session
 from tqdm import tqdm
 
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
@@ -12,7 +14,18 @@ from ingest_ragflow.dspace_api.files import retrieve_item_file
 from ingest_ragflow.rag.files import generate_document_list
 
 
-def upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids):
+def upload_and_parse_file(
+    file_path: str, ragflow_dataset: DataSet, lock, document_ids: list[str]
+):
+    """
+    Upload a file to RagFlow dataset and trigger parsing.
+
+    Args:
+        file_path: Path to the file to upload.
+        ragflow_dataset: RagFlow dataset object.
+        lock: Threading lock to ensure thread-safe upload/parse.
+        document_ids: List to append the new document ID after upload.
+    """
     document = generate_document_list([file_path])  # It is a list of dicts
 
     with lock:  # Ensures that only one thread at a time can upload documents
@@ -37,15 +50,31 @@ def upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids):
 
 
 def process_collections_in_parallel(
-    session,
-    base_url,
-    base_url_rest,
-    collections_ids,
-    folder_path,
-    ragflow_dataset,
-    document_ids,
-    max_concurrent_tasks=5,
-):
+    session: Session,
+    base_url: str,
+    base_url_rest: str,
+    collections_ids: list[str],
+    folder_path: str,
+    ragflow_dataset: DataSet,
+    document_ids: list[str],
+    max_concurrent_tasks: int = 5,
+) -> None:
+    """
+    Process collections in parallel:
+    - Retrieve items form collections.
+    - Download files from DSpace.
+    - Upload and parse PDFs in RagFlow.
+
+    Args:
+        session: requests Session object.
+        base_url: Base URL for direct file download.
+        base_url_rest: Base URL for DSpace REST API.
+        collections_ids: List of collection IDs to process.
+        folder_path: Directory where downloaded files will be stored.
+        ragflow_dataset: RagFlow dataset object.
+        document_ids: List to store parsed document IDs.
+        max_concurrent_tasks: Maximum number of concurrent tasks.
+    """
     semaphore = threading.Semaphore(max_concurrent_tasks)
     lock = threading.Lock()
 
@@ -76,7 +105,17 @@ def process_collections_in_parallel(
             future.result()
 
 
-def get_documents_map(dataset, document_ids):
+def get_documents_map(dataset, document_ids: list[str]) -> dict[str, str]:
+    """
+    Map document IDs to their names for a given dataset.
+
+    Args:
+        dataset: RagFlow dataset object.
+        documents_ids: List of document IDs.
+
+    Returns:
+        Dictionary mapping document IDs to document names.
+    """
     documents_map = {}
     for doc in dataset.list_documents():
         if doc.id in document_ids:
@@ -84,7 +123,14 @@ def get_documents_map(dataset, document_ids):
     return documents_map
 
 
-async def monitor_parsing(dataset, document_ids):
+async def monitor_parsing(dataset, document_ids: list[str]) -> None:
+    """
+    Monitor the parsing progress of documents in RagFlow.
+
+    Args:
+        dataset: RagFlow dataset object.
+        document_ids: List of document IDs to monitor.
+    """
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
         doc_id: tqdm(
