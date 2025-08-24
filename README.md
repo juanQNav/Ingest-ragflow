@@ -9,13 +9,13 @@ follows:
 src/
 ├── ingest_ragflow/
 ├── dspace_api/
-│ ├── **init**.py
+│ ├── __init__.py
 │ ├── README.md
 │ ├── authentication.py
 │ ├── collections.py
 │ ├── files.py
 ├── rag/
-│ ├── **init**.py
+│ ├── __init__.py
 │ ├── README.md
 │ ├── files.py
 │ ├── parsing.py
