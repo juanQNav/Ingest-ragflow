@@ -41,10 +41,18 @@ if __name__ == "__main__":
 
     # Get collections and select one
     collections_ids = get_collections(session, BASE_URL_REST)
-    collection_id = select_collection(collections_ids)
+    if collections_ids is not None:
+        collection_id = select_collection(collections_ids)
 
-    # Get items from the selected collection
-    items_ids = get_items_from_collection(session, collection_id, BASE_URL_REST)
+        # Get items from the selected collection
+        items_ids = get_items_from_collection(session, collection_id, BASE_URL_REST)
 
-    # Fetch and download files
-    fetch_and_download_files(session, BASE_URL, BASE_URL_REST, items_ids, OUTPUT_PATH)
+        if items_ids is not None:
+            # Fetch and download files
+            fetch_and_download_files(
+                session, BASE_URL, BASE_URL_REST, items_ids, OUTPUT_PATH
+            )
+        else:
+            print("The IDs for the collections were not found.")
+    else:
+        print("No collections found")

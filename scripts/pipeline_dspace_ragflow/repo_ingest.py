@@ -48,67 +48,67 @@ if __name__ == "__main__":
     collections_ids = get_collections(session, BASE_URL_REST, verbose=True)
     if collections_ids is not None:
         print(f"Found {len(collections_ids)} collections.")
+
+        # Initialize RAGFlow
+        API_KEY = args["apikey"]
+        RAG_URL = args["ragflow_url"]
+        rag_object = RAGFlow(api_key=API_KEY, base_url=RAG_URL)
+
+        # Choose or create dataset
+        create_new_dataset = input("Create new dataset? (y/n): ").strip().lower() == "y"
+
+        if create_new_dataset:
+            dataset = rag_object.create_dataset(name="test_knowledge")
+            dataset.update(
+                {
+                    "embedding_model": "mxbai-embed-large:latest",
+                    "chunk_method": "naive",
+                    "parser_config": {
+                        "chunk_token_count": 128,
+                        "delimiter": "\n!?;。；！？",
+                        "layout_recognize": True,
+                        "html4excel": False,
+                        "raptor": {"use_raptor": False},
+                    },
+                }
+            )
+        else:
+            datasets = rag_object.list_datasets()
+            for i, dataset in enumerate(datasets):
+                print(f"{i}: {dataset.name}")
+            selected_index = int(input("Enter dataset ID: "))
+            dataset = rag_object.list_datasets(id=datasets[selected_index].id)[0]
+
+        # List of documents
+        document_ids = []
+        collections_ids = [select_collection(collections_ids)]
+
+        # Retrieve items from collections and process them in parallel
+        process_collections_in_parallel(
+            session=session,
+            base_url=BASE_URL,
+            base_url_rest=BASE_URL_REST,
+            collections_ids=collections_ids,
+            folder_path=FOLDER_PATH,
+            ragflow_dataset=dataset,
+            document_ids=document_ids,
+            max_concurrent_tasks=MAX_CONCURRENT_TASKS,
+        )
+
+        # Monitoring after downloading
+        tqdm.write("Starting document parsing monitoring...")
+        asyncio.run(monitor_parsing(dataset, document_ids))
+
+        # Final document status
+        documents = dataset.list_documents()
+        print("\nFinal Summary:")
+        print("-" * 50)
+        for doc in documents:
+            print(
+                f"{doc.name} | Status: {doc.run} |\
+                Fragments: {doc.chunk_count}"
+            )
+        print("-" * 50)
+        print("Process completed successfully.")
     else:
         print("No collections found.")
-
-    # Initialize RAGFlow
-    API_KEY = args["apikey"]
-    RAG_URL = args["ragflow_url"]
-    rag_object = RAGFlow(api_key=API_KEY, base_url=RAG_URL)
-
-    # Choose or create dataset
-    create_new_dataset = input("Create new dataset? (y/n): ").strip().lower() == "y"
-
-    if create_new_dataset:
-        dataset = rag_object.create_dataset(name="test_knowledge")
-        dataset.update(
-            {
-                "embedding_model": "mxbai-embed-large:latest",
-                "chunk_method": "naive",
-                "parser_config": {
-                    "chunk_token_count": 128,
-                    "delimiter": "\n!?;。；！？",
-                    "layout_recognize": True,
-                    "html4excel": False,
-                    "raptor": {"use_raptor": False},
-                },
-            }
-        )
-    else:
-        datasets = rag_object.list_datasets()
-        for i, dataset in enumerate(datasets):
-            print(f"{i}: {dataset.name}")
-        selected_index = int(input("Enter dataset ID: "))
-        dataset = rag_object.list_datasets(id=datasets[selected_index].id)[0]
-
-    # List of documents
-    document_ids = []
-    collections_ids = [select_collection(collections_ids)]
-
-    # Retrieve items from collections and process them in parallel
-    process_collections_in_parallel(
-        session=session,
-        base_url=BASE_URL,
-        base_url_rest=BASE_URL_REST,
-        collections_ids=collections_ids,
-        folder_path=FOLDER_PATH,
-        ragflow_dataset=dataset,
-        document_ids=document_ids,
-        max_concurrent_tasks=MAX_CONCURRENT_TASKS,
-    )
-
-    # Monitoring after downloading
-    tqdm.write("Starting document parsing monitoring...")
-    asyncio.run(monitor_parsing(dataset, document_ids))
-
-    # Final document status
-    documents = dataset.list_documents()
-    print("\nFinal Summary:")
-    print("-" * 50)
-    for doc in documents:
-        print(
-            f"📄 {doc.name} | Status: {doc.run} |\
-               Fragments: {doc.chunk_count}"
-        )
-    print("-" * 50)
-    print("Process completed successfully.")
