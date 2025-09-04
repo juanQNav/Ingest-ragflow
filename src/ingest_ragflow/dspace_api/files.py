@@ -1,12 +1,11 @@
 import os
 from typing import List, Optional
 
-from requests import Session
+import requests
 from tqdm import tqdm
 
 
 def download_file(
-    session: Session,
     file_url: str,
     output_path: str,
     file_name: str,
@@ -17,14 +16,13 @@ def download_file(
     Download a file from DSpace and save it locally.
 
     Args:
-        session: requests Session object.
         file_url: URI of the file in DSpace.
         output_path: Directory path where the file will be saved.
         file_name: Name to save the file as.
         total_size_in_bytes: Size of the file in Bytes.
         position: Position of the progress bar in tqdm output.
     """
-    file_response = session.get(file_url, stream=True)
+    file_response = requests.get(file_url, stream=True)
 
     if file_response.status_code == 200:
         file_path = os.path.join(output_path, file_name)
@@ -52,7 +50,6 @@ def download_file(
 
 
 def fetch_and_download_files(
-    session: Session,
     base_url: str,
     base_url_rest: str,
     items_ids: List[str],
@@ -62,7 +59,6 @@ def fetch_and_download_files(
     Fetch item bitstreams and download their files.
 
     Args:
-        session: requests Session object.
         base_url: Base URL from RI for direct file download.
         base_url_rest: Base URL for DSpace REST API.
         items_ids: List of item IDs whose files will be downloaded.
@@ -70,7 +66,7 @@ def fetch_and_download_files(
     """
     for item_id in items_ids:
         item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-        response = session.get(item_url)
+        response = requests.get(item_url)
 
         if response.status_code == 200:
             item_details = response.json()
@@ -86,7 +82,6 @@ def fetch_and_download_files(
                     total_size_in_bytes = bitstreams[0].get("sizeBytes", 0)
 
                     download_file(
-                        session,
                         f"{base_url}{file_url}",
                         output_path,
                         file_name,
@@ -104,7 +99,6 @@ def fetch_and_download_files(
 
 
 def retrieve_item_file(
-    session: Session,
     base_url: str,
     base_url_rest: str,
     item_id: str,
@@ -115,7 +109,6 @@ def retrieve_item_file(
     Retrive and download a single item's first bitstreams.
 
     Args:
-        session: requests Session object.
         base_url: Base URL form RI for direct file download.
         base_url_rest: Base URL for DSpace REST API.
         item_id: ID of the item to retrieve.
@@ -126,7 +119,7 @@ def retrieve_item_file(
         Local file path if the file was successfully downloaded,
     """
     item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-    response = session.get(item_url)
+    response = requests.get(item_url)
 
     if response.status_code == 200:
         item_details = response.json()
@@ -141,7 +134,6 @@ def retrieve_item_file(
                 if not os.path.exists(file_path):
                     total_size_in_bytes = bitstreams[0].get("sizeBytes", 0)
                     download_file(
-                        session,
                         f"{base_url}{file_url}",
                         folder_path,
                         file_name,

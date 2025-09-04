@@ -1,18 +1,17 @@
 from typing import List, Optional
 
 import pandas as pd
-from requests import Session
+import requests
 from tqdm import tqdm
 
 
 def get_items_from_collection(
-    session: Session, collection_id: str, base_url_rest: str, verbose: bool = False
+    collection_id: str, base_url_rest: str, verbose: bool = False
 ) -> Optional[List[str]]:
     """
     Retrieve item IDs from a collection.
 
     Args:
-        session: requests Session object.
         collection_id: Collection ID from DSpace.
         base_url_rest: Base URL for DSpace REST API.
         verbose: Wheter to print detailed information.
@@ -23,7 +22,7 @@ def get_items_from_collection(
     items_url = f"{base_url_rest}/collections/{collection_id}/items"
     if verbose:
         print(f"Getting items from collection {collection_id}...")
-    response = session.get(items_url)
+    response = requests.get(items_url)
 
     if response.status_code == 200:
         items = response.json()
@@ -45,14 +44,11 @@ def get_items_from_collection(
         exit()
 
 
-def get_collections(
-    session: Session, base_url_rest: str, verbose: bool = False
-) -> Optional[List[str]]:
+def get_collections(base_url_rest: str, verbose: bool = False) -> Optional[List[str]]:
     """
     Retrieve all collections from DSpace
 
     Args:
-        session: requests Session object.
         base_url_rest: Base URL for DSpace REST API.
         verbose: Wheter to print detailed information.
 
@@ -62,7 +58,7 @@ def get_collections(
     collections_url = f"{base_url_rest}/collections"
     if verbose:
         print(f"Getting collections from {collections_url}...")
-    response = session.get(collections_url)
+    response = requests.get(collections_url)
 
     if response.status_code == 200:
         collections = response.json()
@@ -116,14 +112,11 @@ def select_collection(collections_ids: List[str]) -> str:
             print("Please enter a valid number.")
 
 
-def get_collection_stats(
-    session: Session, base_url_rest: str, collection_id: str
-) -> tuple[int, int]:
+def get_collection_stats(base_url_rest: str, collection_id: str) -> tuple[int, int]:
     """
     Calculate  stats for a single collection.
 
     Args:
-        session: requests Session object.
         base_url_rest: Base URL for DSpace REST API.
         collection_id: Collection ID to retrieve stats from.
 
@@ -132,13 +125,13 @@ def get_collection_stats(
             - item_count: number of items in the collection.
             - total_size: sum of the sizes of the items in Bytes.
     """
-    items_ids = get_items_from_collection(session, collection_id, base_url_rest) or []
+    items_ids = get_items_from_collection(collection_id, base_url_rest) or []
     total_size = 0
     item_count = len(items_ids)
 
     for item_id in items_ids:
         item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-        response = session.get(item_url)
+        response = requests.get(item_url)
 
         if response.status_code == 200:
             item_details = response.json()
@@ -149,33 +142,31 @@ def get_collection_stats(
     return item_count, total_size
 
 
-def generate_collection_stats(session: Session, base_url_rest: str) -> pd.DataFrame:
+def generate_collection_stats(base_url_rest: str) -> pd.DataFrame:
     """
     Generate statistics for all collections in DSpace.
 
     Args:
-        session: requests Session object.
+        base_url_rest: Base URL for DSpace REST API.
 
     Returns:
         pd.DataFrame: DataFrame with collection statistics, including
         document counts and total size, plus a summary row.
     """
-    collections_ids = get_collections(session, base_url_rest)
+    collections_ids = get_collections(base_url_rest)
     data = []
     total_documents = 0
     total_size_all_collections = 0
 
     for collection_id in tqdm(collections_ids, desc="Processing collections"):
         collection_url = f"{base_url_rest}/collections/{collection_id}"
-        response = session.get(collection_url)
+        response = requests.get(collection_url)
 
         if response.status_code == 200:
             collection_details = response.json()
             collection_name = collection_details.get("name", "No name")
 
-            item_count, total_size = get_collection_stats(
-                session, base_url_rest, collection_id
-            )
+            item_count, total_size = get_collection_stats(base_url_rest, collection_id)
             total_documents += item_count
             total_size_all_collections += total_size
 
