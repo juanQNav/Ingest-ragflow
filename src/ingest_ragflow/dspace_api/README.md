@@ -51,7 +51,7 @@ authenticate_user(session, email, password, base_url_rest)
 ```python
 from ingest_ragflow.dspace_api.collections import get_collections
 
-collections = get_collections(session, base_url_rest)
+collections = get_collections(base_url_rest)
 print("Available collections:", collections)
 ```
 
@@ -61,7 +61,7 @@ print("Available collections:", collections)
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
 
 collection_id = "COLLECTION_UUID"
-items = get_items_from_collection(session, collection_id, base_url_rest)
+items = get_items_from_collection(collection_id, base_url_rest)
 print("Items in the collection:", items)
 ```
 
@@ -71,7 +71,7 @@ print("Items in the collection:", items)
 from ingest_ragflow.dspace_api.files import fetch_and_download_files
 
 output_path = "./downloads"
-fetch_and_download_files(session, "https://your-dspace.edu", base_url_rest,
+fetch_and_download_files("https://your-dspace.edu", base_url_rest,
 items, output_path)
 ```
 
