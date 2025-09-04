@@ -6,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from ragflow_sdk.modules.dataset import DataSet
-from requests import Session
 from tqdm import tqdm
 
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
@@ -50,7 +49,6 @@ def upload_and_parse_file(
 
 
 def process_collections_in_parallel(
-    session: Session,
     base_url: str,
     base_url_rest: str,
     collections_ids: list[str],
@@ -66,7 +64,6 @@ def process_collections_in_parallel(
     - Upload and parse PDFs in RagFlow.
 
     Args:
-        session: requests Session object.
         base_url: Base URL for direct file download.
         base_url_rest: Base URL for DSpace REST API.
         collections_ids: List of collection IDs to process.
@@ -81,7 +78,7 @@ def process_collections_in_parallel(
     def process_item(item_id, position):
         with semaphore:
             file_path = retrieve_item_file(
-                session, base_url, base_url_rest, item_id, folder_path, position
+                base_url, base_url_rest, item_id, folder_path, position
             )
             if file_path and file_path.endswith(".pdf"):
                 upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids)
@@ -91,7 +88,7 @@ def process_collections_in_parallel(
         items_ids = []
         for id_collection in collections_ids:
             items = get_items_from_collection(
-                session, id_collection, base_url_rest, verbose=False
+                id_collection, base_url_rest, verbose=False
             )
             if items is not None:
                 items_ids.extend(items)
