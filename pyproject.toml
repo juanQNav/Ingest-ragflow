@@ -5,10 +5,10 @@ description = "This repository contains code for integrating and using various c
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
   {name = "juanQNav", email = "juan.qn363@gmail.com"},
-  {name = "MikelBarajas38", email = ""},
-  {name = "paopaopro", email = ""},
-  {name = "SantiagoLunaMir", email = ""},
-  {name = "Daphish's", email = ""}
+  {name = "MikelBarajas38", email = "mikelbarajas388@gmail.com"},
+  {name = "paopaopro", email = "paopaopro1808@gmail.com"},
+  {name = "SantiagoLunaMir", email = "santiagomireles107@gmail.com"},
+  {name = "Daphish's", email = "ivan.davila.2003@gmail.com"}
 ]
 requires-python = ">=3.13"
 dependencies = [
