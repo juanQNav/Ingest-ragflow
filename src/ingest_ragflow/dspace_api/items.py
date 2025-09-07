@@ -8,33 +8,44 @@ from tqdm import tqdm
 
 def get_items(
     base_url_rest: str,
-    limit: int = 100,
+    limit_items_page: int = 100,
     max_retries: int = 3,
     verbose: bool = False,
+    limit_items: Optional[int] = None,
 ) -> Optional[List[dict]]:
     """
     Retrieve items from DSpace.
 
     Args:
         base_url_rest: Base URL for DSpace REST API.
-        limit: Number of items per page.
+        limit_items_page: Number of items per page.
         max_retries: Maximum number of retries for failed requests.
         verbose: Wheter to print detailed information.
+        limit_items: Total number of retrieve items.
 
     Returns:
-        List of item IDs of found, otherwise None.
+        List of dictionaries containing metadata on the items, otherwise none.
     """
 
     items_url = f"{base_url_rest}/items"
-    items_ids = []
+    items = []
     offset = 0
 
     if verbose:
         print("Getting items...")
-        print(f"Using limit: {limit} items per page")
+        print(f"Using limit: {limit_items_page} items per page")
 
     while True:
-        params = {"limit": limit, "offset": offset}
+        # limit number of retriveal
+        current_limit = (
+            min(limit_items - len(items), limit_items_page)
+            if limit_items is not None
+            else limit_items_page
+        )
+
+        if limit_items is not None and len(items) >= limit_items:
+            break
+        params = {"limit": current_limit, "offset": offset}
 
         # Retry mechanism
         for attempt in range(max_retries):
@@ -51,16 +62,16 @@ def get_items(
                 time.sleep(2**attempt)  # Exponential backoff
 
         if response.status_code == 200:
-            items = response.json()
+            items_retrieved = response.json()
 
-            if len(items) > 0:
-                items_ids.extend(items)
+            if len(items_retrieved) > 0:
+                items.extend(items_retrieved)
 
                 if verbose:
                     print(
-                        f"Retrieved {len(items)} items from offset {offset} (total: {len(items_ids)})"
+                        f"Retrieved {len(items_retrieved)} items from offset {offset} (total: {len(items)})"
                     )
-                offset += len(items)
+                offset += len(items_retrieved)
             else:
                 if verbose:
                     print("No more items found. Finishing...")
@@ -69,7 +80,10 @@ def get_items(
             print(f"Error {response.status_code}: Items could not be obtained.")
             return None
 
-    return items_ids
+    if verbose:
+        print(f"Number of items to return: {len(items)}")
+
+    return items
 
 
 def get_items_ids(items: List[dict]) -> list[str]:

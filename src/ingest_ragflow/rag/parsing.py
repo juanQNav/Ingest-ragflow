@@ -3,6 +3,7 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import requests
 from ragflow_sdk.modules.dataset import DataSet
@@ -10,6 +11,7 @@ from tqdm import tqdm
 
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
 from ingest_ragflow.dspace_api.files import retrieve_item_file
+from ingest_ragflow.dspace_api.items import get_items, get_items_ids
 from ingest_ragflow.rag.files import generate_document_list
 
 
@@ -48,6 +50,56 @@ def upload_and_parse_file(
         )
 
 
+def process_items_in_parallel(
+    base_url: str,
+    base_url_rest: str,
+    folder_path: str,
+    ragflow_dataset: DataSet,
+    document_ids: list[str],
+    max_concurrent_tasks: int = 5,
+    limit_items: Optional[int] = None,
+) -> None:
+    """
+    Process items in parallel:
+    - Retrieve items from DSpace.
+    - Download files from DSpace.
+    - Upload and parse PDFs in RagFlow.
+
+    Args:
+        base_url: Base URL for direct file download.
+        base_url_rest: Base URL for DSpace REST API.
+        folder_path: Directory where downloaded files will be stored.
+        ragflow_dataset: RagFlow dataset object.
+        document_ids: List to store parsed document IDs.
+        max_concurrent_tasks: Maximum number of concurrent tasks.
+        limit_items: Total number of retrieve items.
+    """
+    semaphore = threading.Semaphore(max_concurrent_tasks)
+    lock = threading.Lock()
+
+    def process_item(item_id, position):
+        with semaphore:
+            file_path = retrieve_item_file(
+                base_url, base_url_rest, item_id, folder_path, position
+            )
+            if file_path and file_path.endswith(".pdf"):
+                upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids)
+
+    print("Getting items from collections...")
+    with ThreadPoolExecutor() as executor:
+        items = get_items(base_url_rest, verbose=True, limit_items=limit_items)
+        if items is not None:
+            items_ids = get_items_ids(items)
+
+        futures = [
+            executor.submit(process_item, item_id, index)
+            for index, item_id in enumerate(items_ids)
+        ]
+
+        for future in futures:
+            future.result()
+
+
 def process_collections_in_parallel(
     base_url: str,
     base_url_rest: str,
@@ -59,7 +111,7 @@ def process_collections_in_parallel(
 ) -> None:
     """
     Process collections in parallel:
-    - Retrieve items form collections.
+    - Retrieve items from collections.
     - Download files from DSpace.
     - Upload and parse PDFs in RagFlow.
 
