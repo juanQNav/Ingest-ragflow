@@ -11,5 +11,5 @@ setup(
         "pandas",
         "ragflow-sdk",
     ],
-    python_requires=">=3.13",
+    python_requires=">=3.10",
 )
