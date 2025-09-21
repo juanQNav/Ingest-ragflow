@@ -30,6 +30,7 @@ if __name__ == "__main__":
     ap.add_argument(
         "--max_tasks", default=8, type=int, help="Maximum number of concurrent tasks"
     )
+    ap.add_argument("--poll_interval", default=2.5, type=float, help="Interval (in seconds) between status checks")
 
     args = vars(ap.parse_args())
 
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     LIMIT_ITEMS = args["li"]
     FOLDER_PATH = args["folder_path"]
     MAX_CONCURRENT_TASKS = args["max_tasks"]
+    POLL_INTERVAL = args["poll_interval"]
 
     # Create output directory if it does not exist
     os.makedirs(FOLDER_PATH, exist_ok=True)
@@ -72,7 +74,7 @@ if __name__ == "__main__":
 
     # Monitoring after dowloading
     tqdm.write("Starting document parsing monitoring...")
-    asyncio.run(monitor_parsing(dataset, document_ids))
+    asyncio.run(monitor_parsing(dataset, document_ids, POLL_INTERVAL))
 
     # Final document status
     documents = dataset.list_documents()

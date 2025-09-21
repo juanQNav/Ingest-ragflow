@@ -172,13 +172,14 @@ def get_documents_map(dataset, document_ids: list[str]) -> dict[str, str]:
     return documents_map
 
 
-async def monitor_parsing(dataset, document_ids: list[str]) -> None:
+async def monitor_parsing(dataset, document_ids: list[str], poll_interval: float = 2.5) -> None:
     """
     Monitor the parsing progress of documents in RagFlow.
 
     Args:
         dataset: RagFlow dataset object.
         document_ids: List of document IDs to monitor.
+        poll_interval: Interval (in seconds) between status checks.
     """
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
@@ -220,7 +221,7 @@ async def monitor_parsing(dataset, document_ids: list[str]) -> None:
                     all_done = False
 
         if not all_done:
-            await asyncio.sleep(1)
+            await asyncio.sleep(poll_interval)
     for bar in progress_bars.values():
         bar.close()
 
