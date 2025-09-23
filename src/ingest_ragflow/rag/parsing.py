@@ -85,7 +85,6 @@ def process_items_in_parallel(
             if file_path and file_path.endswith(".pdf"):
                 upload_and_parse_file(file_path, ragflow_dataset, lock, document_ids)
 
-    print("Getting items from collections...")
     with ThreadPoolExecutor() as executor:
         items = get_items(base_url_rest, verbose=True, limit_items=limit_items)
         if items is not None:
