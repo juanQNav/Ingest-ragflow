@@ -153,7 +153,7 @@ def process_collections_in_parallel(
             future.result()
 
 
-def get_documents_map(dataset, document_ids: list[str]) -> dict[str, str]:
+def get_documents_map(dataset: DataSet, document_ids: list[str]) -> dict[str, str]:
     """
     Map document IDs to their names for a given dataset.
 
@@ -171,7 +171,7 @@ def get_documents_map(dataset, document_ids: list[str]) -> dict[str, str]:
     return documents_map
 
 
-async def monitor_parsing(dataset, document_ids: list[str], poll_interval: float = 2.5) -> None:
+async def monitor_parsing(dataset: DataSet, document_ids: list[str], poll_interval: float = 2.5) -> None:
     """
     Monitor the parsing progress of documents in RagFlow.
 
