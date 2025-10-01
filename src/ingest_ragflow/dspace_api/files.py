@@ -4,6 +4,8 @@ from typing import List, Optional
 import requests
 from tqdm import tqdm
 
+from ingest_ragflow.dspace_api.items import get_item_details
+
 
 def download_file(
     file_url: str,
@@ -104,9 +106,9 @@ def retrieve_item_file(
     item_id: str,
     folder_path: str,
     position: int,
-) -> Optional[str]:
+) -> tuple[Optional[str], Optional[dict]]:
     """
-    Retrive and download a single item's first bitstreams.
+    Retrive and download a single item's first bitstreams and return metadata.
 
     Args:
         base_url: Base URL form RI for direct file download.
@@ -116,34 +118,34 @@ def retrieve_item_file(
         position. Position of the progress bar in tqdm output.
 
     Returns:
-        Local file path if the file was successfully downloaded,
+        Tuple (local_file_path, item_metadata) if succesful, (None, None) otherwise.
     """
-    item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-    response = requests.get(item_url)
+    item_details = get_item_details(base_url_rest, item_id)
 
-    if response.status_code == 200:
-        item_details = response.json()
-        bitstreams = item_details.get("bitstreams", [])
+    if not item_details:
+        return None, None
 
-        if bitstreams:
-            file_url = bitstreams[0].get("retrieveLink", None)
-            if file_url:
-                file_name = bitstreams[0].get("name", "downloaded_file")
-                file_path = os.path.join(folder_path, file_name)
+    bitstreams = item_details.get('bitstreams', [])
 
-                if not os.path.exists(file_path):
-                    total_size_in_bytes = bitstreams[0].get("sizeBytes", 0)
-                    download_file(
-                        f"{base_url}{file_url}",
-                        folder_path,
-                        file_name,
-                        total_size_in_bytes,
-                        position,
-                    )
-                else:
-                    tqdm.write(
-                        f"[INFO] File {file_name} already exists, \
-                               skipping download..."
-                    )
-                return file_path
-    return None
+    if bitstreams:
+        file_url = bitstreams[0].get("retrieveLink", None)
+        if file_url:
+            file_name = bitstreams[0].get("name", "downloaded_file")
+            file_path = os.path.join(folder_path, file_name)
+
+            if not os.path.exists(file_path):
+                total_size_in_bytes = bitstreams[0].get("sizeBytes", 0)
+                download_file(
+                    f"{base_url}{file_url}",
+                    folder_path,
+                    file_name,
+                    total_size_in_bytes,
+                    position,
+                )
+            else:
+                tqdm.write(
+                    f"[INFO] File {file_name} already exists, \
+                            skipping download..."
+                )
+            return file_path, item_details
+    return None, None

@@ -101,6 +101,79 @@ def get_items_ids(items: List[dict]) -> list[str]:
 
     return items_ids
 
+def get_item_metadata(base_url_rest:str, item_id:str)->Optional[dict]:
+    """
+    Get complete metadata for a single item from DSpace REST API.
+
+    Args:
+        base_url_rest: Base URL for DSpace REST API.
+        item_id: UUID of the item.
+
+    Return:
+        Dictionary with item metadata or None if error.
+    """
+    item_url = f"{base_url_rest}/items/{item_id}/metadata"
+    
+    try: 
+        response = requests.get(item_url)
+        if response.status_code == 200:
+            raw_metadata = response.json()
+            metadata = {}
+
+            for entry in raw_metadata:
+                key = entry['key']
+                value = entry['value']
+                if isinstance(value, list):
+                    metadata[key] = [v for v in value]
+                else:
+                    metadata[key] = value
+            return metadata
+        else:
+            print(f"Error {response.status_code} getting metadata for item {item_id}")
+            return None
+    except Exception as e:
+        print(f"Exception getting metadata for item {item_id}: {e}")
+        return None
+
+def get_item_details(base_url_rest: str, item_id: str)->Optional[dict]:
+    """
+    Get complete item details including metadata and bitstreams info.
+
+    Args:
+        base_url_rest: Base URL for DSpace REST API.
+        item_id:  UUID of item. 
+
+    Returns: 
+        Dictionary with complete item details.
+    """
+    item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams,metadata"
+
+    try: 
+        response = requests.get(item_url)
+        if response.status_code == 200:
+            item_data = response.json()
+
+            metadata = get_item_metadata(base_url_rest, item_id)
+
+            item_details = {
+                'uuid': item_data.get('uuid'),
+                'name': item_data.get('name'),
+                'handle': item_data.get('handle'),
+                'inArchive': item_data.get('inArchive'),
+                'discoverable': item_data.get('discoverable'),
+                'withdrawn': item_data.get('withdrawn'),
+                'lastModified': item_data.get('lastModified'),
+                'metadata': metadata or {},
+                'bitstreams': item_data.get('bitstreams', [])
+            }
+
+            return item_details
+        else:
+            print(f"Error {response.status_code} getting details for item {item_id}")
+            return None
+    except Exception as e:
+        print(f"Exception getting details for item {item_id}: {e}")
+        return None
 
 def get_item_stats(base_url_rest: str, item: dict) -> tuple[str, str, str, int]:
     """
