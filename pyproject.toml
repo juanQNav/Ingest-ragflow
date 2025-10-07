@@ -23,7 +23,8 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-	"ingest-ragflow"
+	"ingest-ragflow",
+	"ruff>=0.13.2",
 ]
 
 [tool.uv.sources]
