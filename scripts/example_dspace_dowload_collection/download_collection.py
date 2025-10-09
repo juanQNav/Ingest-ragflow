@@ -14,7 +14,9 @@ from ingest_ragflow.dspace_api.files import fetch_and_download_files
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--output", required=True, help="Output path for downloaded files")
+    ap.add_argument(
+        "--output", required=True, help="Output path for downloaded files"
+    )
 
     args = vars(ap.parse_args())
 
@@ -36,7 +38,9 @@ if __name__ == "__main__":
 
         if items_ids is not None:
             # Fetch and download files
-            fetch_and_download_files(BASE_URL, BASE_URL_REST, items_ids, OUTPUT_PATH)
+            fetch_and_download_files(
+                BASE_URL, BASE_URL_REST, items_ids, OUTPUT_PATH
+            )
         else:
             print("The IDs for the collections were not found.")
     else:

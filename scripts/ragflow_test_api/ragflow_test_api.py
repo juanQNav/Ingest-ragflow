@@ -1,7 +1,8 @@
 from ragflow_sdk import RAGFlow
 
 rag_object = RAGFlow(
-    api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm", base_url="http://localhost:9380"
+    api_key="ragflow-I5ZDJlNjI4ZTMwYzExZWZhYzA1MDI0Mm",
+    base_url="http://localhost:9380",
 )
 
 name_assistants = []

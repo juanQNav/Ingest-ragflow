@@ -26,7 +26,9 @@ def find_pdf_files(path: str) -> list[str]:
     Returns:
         List of absolute paths to PDF files.
     """
-    return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")]
+    return [
+        os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")
+    ]
 
 
 def generate_document_list(files_paths: list[str]) -> list[dict[str, object]]:

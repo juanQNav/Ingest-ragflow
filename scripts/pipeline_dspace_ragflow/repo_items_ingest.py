@@ -25,12 +25,24 @@ if __name__ == "__main__":
         required=True,
         help="Folder path for downloaded files",
     )
-    ap.add_argument("--apikey", type=str, required=True, help="API key for RAGFlow")
-    ap.add_argument("--ragflow_url", type=str, required=True, help="RAGFlow URL")
     ap.add_argument(
-        "--max_tasks", default=8, type=int, help="Maximum number of concurrent tasks"
+        "--apikey", type=str, required=True, help="API key for RAGFlow"
     )
-    ap.add_argument("--poll_interval", default=2.5, type=float, help="Interval (in seconds) between status checks")
+    ap.add_argument(
+        "--ragflow_url", type=str, required=True, help="RAGFlow URL"
+    )
+    ap.add_argument(
+        "--max_tasks",
+        default=8,
+        type=int,
+        help="Maximum number of concurrent tasks",
+    )
+    ap.add_argument(
+        "--poll_interval",
+        default=2.5,
+        type=float,
+        help="Interval (in seconds) between status checks",
+    )
 
     args = vars(ap.parse_args())
 

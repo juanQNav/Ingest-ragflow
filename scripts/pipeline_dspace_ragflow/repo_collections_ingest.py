@@ -5,7 +5,10 @@ import os
 from ragflow_sdk import RAGFlow
 from tqdm import tqdm
 
-from ingest_ragflow.dspace_api.collections import get_collections, select_collection
+from ingest_ragflow.dspace_api.collections import (
+    get_collections,
+    select_collection,
+)
 from ingest_ragflow.rag.parsing import (
     monitor_parsing,
     process_collections_in_parallel,
@@ -19,7 +22,10 @@ if __name__ == "__main__":
     ap.add_argument("--apikey", required=True, help="API key for RAGFlow")
     ap.add_argument("--ragflow_url", required=True, help="RAGFlow URL")
     ap.add_argument(
-        "--max_tasks", default=8, type=int, help="Maximum number of concurrent tasks"
+        "--max_tasks",
+        default=8,
+        type=int,
+        help="Maximum number of concurrent tasks",
     )
 
     args = vars(ap.parse_args())
@@ -44,7 +50,9 @@ if __name__ == "__main__":
         rag_object = RAGFlow(api_key=API_KEY, base_url=RAG_URL)
 
         # Choose or create dataset
-        create_new_dataset = input("Create new dataset? (y/n): ").strip().lower() == "y"
+        create_new_dataset = (
+            input("Create new dataset? (y/n): ").strip().lower() == "y"
+        )
 
         if create_new_dataset:
             dataset = rag_object.create_dataset(name="test_knowledge")
@@ -66,7 +74,9 @@ if __name__ == "__main__":
             for i, dataset in enumerate(datasets):
                 print(f"{i}: {dataset.name}")
             selected_index = int(input("Enter dataset ID: "))
-            dataset = rag_object.list_datasets(id=datasets[selected_index].id)[0]
+            dataset = rag_object.list_datasets(id=datasets[selected_index].id)[
+                0
+            ]
 
         # List of documents
         document_ids = []

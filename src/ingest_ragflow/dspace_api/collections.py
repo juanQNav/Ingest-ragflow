@@ -44,7 +44,9 @@ def get_items_from_collection(
         exit()
 
 
-def get_collections(base_url_rest: str, verbose: bool = False) -> Optional[List[str]]:
+def get_collections(
+    base_url_rest: str, verbose: bool = False
+) -> Optional[List[str]]:
     """
     Retrieve all collections from DSpace
 
@@ -112,7 +114,9 @@ def select_collection(collections_ids: List[str]) -> str:
             print("Please enter a valid number.")
 
 
-def get_collection_stats(base_url_rest: str, collection_id: str) -> tuple[int, int]:
+def get_collection_stats(
+    base_url_rest: str, collection_id: str
+) -> tuple[int, int]:
     """
     Calculate  stats for a single collection.
 
@@ -166,7 +170,9 @@ def generate_collection_stats(base_url_rest: str) -> pd.DataFrame:
             collection_details = response.json()
             collection_name = collection_details.get("name", "No name")
 
-            item_count, total_size = get_collection_stats(base_url_rest, collection_id)
+            item_count, total_size = get_collection_stats(
+                base_url_rest, collection_id
+            )
             total_documents += item_count
             total_size_all_collections += total_size
 

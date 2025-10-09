@@ -125,7 +125,7 @@ def retrieve_item_file(
     if not item_details:
         return None, None
 
-    bitstreams = item_details.get('bitstreams', [])
+    bitstreams = item_details.get("bitstreams", [])
 
     if bitstreams:
         file_url = bitstreams[0].get("retrieveLink", None)

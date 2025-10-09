@@ -244,7 +244,9 @@ def process_collections_in_parallel(
     return metadata_map
 
 
-def get_documents_map(dataset: DataSet, document_ids: list[str]) -> dict[str, str]:
+def get_documents_map(
+    dataset: DataSet, document_ids: list[str]
+) -> dict[str, str]:
     """
     Map document IDs to their names for a given dataset.
 
@@ -276,7 +278,10 @@ async def monitor_parsing(
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
         doc_id: tqdm(
-            total=100.00, desc=f"{doc_name[:30]}[...].pdf", position=i, leave=True
+            total=100.00,
+            desc=f"{doc_name[:30]}[...].pdf",
+            position=i,
+            leave=True,
         )
         for i, (doc_id, doc_name) in enumerate(documents_map.items())
     }
