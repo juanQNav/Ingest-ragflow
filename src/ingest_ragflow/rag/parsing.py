@@ -120,6 +120,7 @@ def process_items_in_parallel(
     document_ids: list[str],
     max_concurrent_tasks: int = 5,
     limit_items: Optional[int] = None,
+    exclude_uuids: Optional[set[str]] = None,
 ) -> dict[str, str]:
     """
     Process items in parallel:
@@ -136,6 +137,7 @@ def process_items_in_parallel(
         document_ids: List to store parsed document IDs.
         max_concurrent_tasks: Maximum number of concurrent tasks.
         limit_items: Total number of retrieve items.
+        exclude_uuids: Set of UUIDs to exclude from prossesing.
 
     Returns:
         Dictionary mapping ragflow_document_id to item metadata.
@@ -143,6 +145,9 @@ def process_items_in_parallel(
     semaphore = threading.Semaphore(max_concurrent_tasks)
     lock = threading.Lock()
     metadata_map = {}
+
+    if exclude_uuids is None:
+        exclude_uuids = set()
 
     def process_single_item(item_id, position):
         with semaphore:
@@ -164,10 +169,29 @@ def process_items_in_parallel(
         items = get_items(base_url_rest, verbose=True, limit_items=limit_items)
         if items is not None:
             items_ids = get_items_ids(items)
+        else:
+            tqdm.write("[WARNING] No items retrieved  from DSpace")
+            return metadata_map
+
+        items_ids_filtered = [
+            item_id for item_id in items_ids if item_id not in exclude_uuids
+        ]
+
+        skipped_count = len(items_ids) - len(items_ids_filtered)
+        if skipped_count > 0:
+            tqdm.write(
+                f"[INFO] Skipping {skipped_count} items that already exist in database"
+            )
+
+        if not items_ids_filtered:
+            tqdm.write("[INFO] No new items to process")
+            return metadata_map
+        else:
+            tqdm.write(f"[INFO] Processing {len(items_ids_filtered)} new items")
 
         futures = [
             executor.submit(process_single_item, item_id, index)
-            for index, item_id in enumerate(items_ids)
+            for index, item_id in enumerate(items_ids_filtered)
         ]
 
         for future in futures:
@@ -184,6 +208,7 @@ def process_collections_in_parallel(
     ragflow_dataset: DataSet,
     document_ids: list[str],
     max_concurrent_tasks: int = 5,
+    exclude_uuids: Optional[set[str]] = None,
 ) -> dict[str, str]:
     """
     Process collections in parallel:
@@ -200,6 +225,7 @@ def process_collections_in_parallel(
         ragflow_dataset: RagFlow dataset object.
         document_ids: List to store parsed document IDs.
         max_concurrent_tasks: Maximum number of concurrent tasks.
+        exclude_uuids: Set of UUIDs to exclude from prossesing.
 
     Returns:
         Dictionary mapping ragflow_document_id to item metadata.
@@ -207,6 +233,9 @@ def process_collections_in_parallel(
     semaphore = threading.Semaphore(max_concurrent_tasks)
     lock = threading.Lock()
     metadata_map = {}
+
+    if exclude_uuids is None:
+        exclude_uuids = set()
 
     def process_single_item(item_id, position):
         with semaphore:
@@ -233,9 +262,25 @@ def process_collections_in_parallel(
             if items is not None:
                 items_ids.extend(items)
 
+        items_ids_filtered = [
+            item_id for item_id in items_ids if item_id not in exclude_uuids
+        ]
+
+        skipped_count = len(items_ids) - len(items_ids_filtered)
+        if skipped_count > 0:
+            tqdm.write(
+                f"[INFO] Skipping {skipped_count} items that already exist in database"
+            )
+
+        if not items_ids_filtered:
+            tqdm.write("[INFO] No new items to process")
+            return metadata_map
+        else:
+            tqdm.write(f"[INFO] Processing {len(items_ids_filtered)} new items")
+
         futures = [
             executor.submit(process_single_item, item_id, index)
-            for index, item_id in enumerate(items_ids)
+            for index, item_id in enumerate(items_ids_filtered)
         ]
 
         for future in futures:
