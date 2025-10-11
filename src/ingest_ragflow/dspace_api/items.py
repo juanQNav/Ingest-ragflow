@@ -29,6 +29,7 @@ def get_items(
 
     items_url = f"{base_url_rest}/items"
     items = []
+    seen_uuids = set()  # Track unique UUIDs to avoid duplicates
     offset = 0
 
     if verbose:
@@ -65,13 +66,37 @@ def get_items(
             items_retrieved = response.json()
 
             if len(items_retrieved) > 0:
-                items.extend(items_retrieved)
+                # Deduplicate items by UUID
+                unique_items = []
+                for item in items_retrieved:
+                    uuid = item.get("uuid")
+                    if uuid and uuid not in seen_uuids:
+                        seen_uuids.add(uuid)
+                        unique_items.append(item)
+                        # Stop if we've reached the limit
+                        if (
+                            limit_items is not None
+                            and len(items) + len(unique_items) >= limit_items
+                        ):
+                            break
+
+                items.extend(unique_items)
 
                 if verbose:
+                    duplicates_found = len(items_retrieved) - len(unique_items)
+                    if duplicates_found > 0:
+                        print(
+                            f"Found {duplicates_found} duplicate items (same UUID), skipping..."
+                        )
                     print(
                         f"Retrieved {len(items_retrieved)} items from offset {offset} (total: {len(items)})"
                     )
                 offset += len(items_retrieved)
+                # If no unique items were added, we might be stuck in duplicates
+                if len(unique_items) == 0:
+                    if verbose:
+                        print("No new unique items found. Finishing...")
+                    break
             else:
                 if verbose:
                     print("No more items found. Finishing...")
@@ -98,8 +123,13 @@ def get_items_ids(items: List[dict]) -> list[str]:
         - List of item IDs.
     """
     items_ids = []
+    seen_uuids = set()
+
     for item in items:
-        items_ids.append(item.get("uuid"))
+        uuid = item.get("uuid")
+        if uuid and uuid not in seen_uuids:
+            seen_uuids.add(uuid)
+            items_ids.append(uuid)
 
     return items_ids
 
