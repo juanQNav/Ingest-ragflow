@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import requests
+import requests.exceptions
 from ragflow_sdk.modules.dataset import DataSet
 from tqdm import tqdm
 
@@ -187,7 +188,9 @@ def process_items_in_parallel(
             tqdm.write("[INFO] No new items to process")
             return metadata_map
         else:
-            tqdm.write(f"[INFO] Processing {len(items_ids_filtered)} new items")
+            tqdm.write(
+                f"[INFO] Processing {len(items_ids_filtered)} new items"
+            )
 
         futures = [
             executor.submit(process_single_item, item_id, index)
@@ -276,7 +279,9 @@ def process_collections_in_parallel(
             tqdm.write("[INFO] No new items to process")
             return metadata_map
         else:
-            tqdm.write(f"[INFO] Processing {len(items_ids_filtered)} new items")
+            tqdm.write(
+                f"[INFO] Processing {len(items_ids_filtered)} new items"
+            )
 
         futures = [
             executor.submit(process_single_item, item_id, index)
@@ -310,7 +315,11 @@ def get_documents_map(
 
 
 async def monitor_parsing(
-    dataset: DataSet, document_ids: list[str], poll_interval: float = 2.5
+    dataset: DataSet,
+    document_ids: list[str],
+    poll_interval: float = 2.5,
+    max_retries: int = 5,
+    retry_delay: float = 10.0,
 ) -> None:
     """
     Monitor the parsing progress of documents in RagFlow.
@@ -319,6 +328,8 @@ async def monitor_parsing(
         dataset: RagFlow dataset object.
         document_ids: List of document IDs to monitor.
         poll_interval: Interval (in seconds) between status checks.
+        max_retries: Maximum number of retries for network errors.
+        retry_delay: Delay (in seconds) before retrying after an error.
     """
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
@@ -332,39 +343,72 @@ async def monitor_parsing(
     }
 
     all_done = False
+    consecutive_errors = 0
+
     while not all_done:
         all_done = True
-        documents = dataset.list_documents()
 
-        for doc in documents:
-            if doc.id in document_ids:
-                progress = doc.progress * 100
-                progress_bars[doc.id].n = round(progress, 2)
-                progress_bars[doc.id].refresh()
+        try:
+            documents = dataset.list_documents()
+            consecutive_errors = 0  # Reset error counter on success
 
-                if doc.run == "RUNNING":
-                    all_done = False
+            for doc in documents:
+                if doc.id in document_ids:
+                    progress = doc.progress * 100
+                    progress_bars[doc.id].n = round(progress, 2)
+                    progress_bars[doc.id].refresh()
+
+                    if doc.run == "RUNNING":
+                        all_done = False
+                else:
+                    if doc.run == "UNSTART":
+                        tqdm.write(
+                            f"[INFO] Retrying to parse document {doc.name}\
+                            (ID: {doc.id})..."
+                        )
+                        dataset.async_parse_documents([doc.id])
+
+                        document_ids.append(doc.id)
+                        progress_bars[doc.id] = tqdm(
+                            total=100.00,
+                            desc=f"{doc.name[:30]}[...].pdf",
+                            position=len(progress_bars),
+                            leave=True,
+                        )
+
+                        all_done = False
+
+            if not all_done:
+                await asyncio.sleep(poll_interval)
+
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.RequestException,
+            Exception,
+        ) as e:
+            consecutive_errors += 1
+            error_type = type(e).__name__
+
+            if consecutive_errors <= max_retries:
+                tqdm.write(
+                    f"[WARNING] Network error during monitoring ({error_type}): {str(e)[:100]}"
+                )
+                tqdm.write(
+                    f"[INFO] Retrying in {retry_delay} seconds..."
+                    f"(Attempt {consecutive_errors}/{max_retries})"
+                )
+                await asyncio.sleep(retry_delay)
+                all_done = False  # Continue monitoring
             else:
-                if doc.run == "UNSTART":
-                    tqdm.write(
-                        f"[INFO] Retrying to parse document {doc.name}\
-                        (ID: {doc.id})..."
-                    )
-                    dataset.async_parse_documents([doc.id])
-
-                    document_ids.append(doc.id)
-                    progress_bars[doc.id] = tqdm(
-                        total=100.00,
-                        desc=f"{doc.name[:30]}[...].pdf",
-                        position=len(progress_bars),
-                        leave=True,
-                    )
-
-                    all_done = False
-
-        if not all_done:
-            await asyncio.sleep(poll_interval)
+                tqdm.write(
+                    f"[Error] Max retries ({max_retries}) exceeded."
+                    "Stopping monitoring but documents may still be processing."
+                )
+                break
     for bar in progress_bars.values():
         bar.close()
 
-    tqdm.write("Parsing completed for all documents.")
+    if consecutive_errors > 0 and consecutive_errors <= max_retries:
+        tqdm.write("[INFO] Monitoring recovered from network errors.")
+
+    tqdm.write("Parsing monitoring completed.")
