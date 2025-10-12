@@ -100,6 +100,44 @@ def fetch_and_download_files(
             )
 
 
+def get_primary_pdf_bitstream(bitstreams: List[dict]) -> Optional[dict]:
+    """
+    Get the primary PDF bitstreams from a list of bitstreams.
+
+    Prioritizes:
+    1. PDFs in ORIGINAL bundle (main document)
+    2. Largest PDF file
+    3. First PDF found
+
+    Args:
+        bitstreams: List of bitstreams dictionaries.
+
+    Returns:
+        The primary PDF bitstream or None if no PDF found.
+    """
+    if not bitstreams:
+        return None
+
+    pdf_bitstreams = [
+        bs for bs in bitstreams if bs.get("name", "".lower().endswith(".pdf"))
+    ]
+
+    if not pdf_bitstreams:
+        return None
+
+    # Priority 1: ORIGINAL bundle
+    original_pdfs = [
+        bs for bs in pdf_bitstreams if bs.get("bundleName") == "ORIGINAL"
+    ]
+
+    # If multiple PDFs in ORIGINAL, return the Largest
+    if original_pdfs:
+        return max(original_pdfs, key=lambda x: x.get("sizeBytes", 0))
+
+    # # Priority 2: Return the Largest PDF
+    return max(pdf_bitstreams, key=lambda x: x.get("sizeBytes", 0))
+
+
 def retrieve_item_file(
     base_url: str,
     base_url_rest: str,
@@ -123,29 +161,49 @@ def retrieve_item_file(
     item_details = get_item_details(base_url_rest, item_id)
 
     if not item_details:
+        tqdm.write(f"[WARNING] Could not get details for item {item_id}")
         return None, None
 
     bitstreams = item_details.get("bitstreams", [])
 
-    if bitstreams:
-        file_url = bitstreams[0].get("retrieveLink", None)
-        if file_url:
-            file_name = bitstreams[0].get("name", "downloaded_file")
-            file_path = os.path.join(folder_path, file_name)
+    if not bitstreams:
+        tqdm.write(f"[WARNING] No bitstreams found for item {item_id}")
+        return None, None
 
-            if not os.path.exists(file_path):
-                total_size_in_bytes = bitstreams[0].get("sizeBytes", 0)
-                download_file(
-                    f"{base_url}{file_url}",
-                    folder_path,
-                    file_name,
-                    total_size_in_bytes,
-                    position,
-                )
-            else:
-                tqdm.write(
-                    f"[INFO] File {file_name} already exists, \
-                            skipping download..."
-                )
-            return file_path, item_details
-    return None, None
+    # Get the primary PDF bitstream
+    primary_bitstream = get_primary_pdf_bitstream(bitstreams)
+
+    if not primary_bitstream:
+        tqdm.write(f"[WARNING] No PDF bitstream found for item {item_id}")
+        return None, None
+
+    file_url = primary_bitstream.get("retrieveLink")
+    if not file_url:
+        tqdm.write(f"[WARNING] No retrieve link for PDF in item {item_id}")
+        return None, None
+
+    file_name = primary_bitstream.get("name", "downloaded_file.pdf")
+    file_path = os.path.join(folder_path, file_name)
+
+    # Check if file already exists
+    if os.path.exists(file_path):
+        tqdm.write(
+            f"[INFO] File {file_name} already exists, skipping download..."
+        )
+    else:
+        total_size_in_bytes = primary_bitstream.get("sizeBytes", 0)
+        bundle_name = primary_bitstream.get("bundleName", "UNKNOWN")
+
+        tqdm.write(
+            f"[INFO] Downloading primary PDF from bundle '{bundle_name}': {file_name}"
+        )
+
+        download_file(
+            f"{base_url}{file_url}",
+            folder_path,
+            file_name,
+            total_size_in_bytes,
+            position,
+        )
+
+    return file_path, item_details
