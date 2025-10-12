@@ -119,7 +119,7 @@ def get_primary_pdf_bitstream(bitstreams: List[dict]) -> Optional[dict]:
         return None
 
     pdf_bitstreams = [
-        bs for bs in bitstreams if bs.get("name", "".lower().endswith(".pdf"))
+        bs for bs in bitstreams if bs.get("name", "").lower().endswith(".pdf")
     ]
 
     if not pdf_bitstreams:
@@ -176,6 +176,10 @@ def retrieve_item_file(
     if not primary_bitstream:
         tqdm.write(f"[WARNING] No PDF bitstream found for item {item_id}")
         return None, None
+
+    # Update item_details to only include the primary bitstream
+    # keep it as a list for consitency
+    item_details["bitstreams"] = [primary_bitstream]
 
     file_url = primary_bitstream.get("retrieveLink")
     if not file_url:
