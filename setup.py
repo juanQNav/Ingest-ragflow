@@ -7,6 +7,7 @@ setup(
     package_dir={"": "src"},
     install_requires=[
         "requests",
+        "requests[socks]",
         "tqdm",
         "pandas",
         "ragflow-sdk",
