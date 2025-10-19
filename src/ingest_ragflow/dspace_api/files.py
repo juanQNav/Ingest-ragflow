@@ -98,6 +98,7 @@ def fetch_and_download_files(
                         output_path,
                         file_name,
                         total_size_in_bytes,
+                        proxies=proxies,
                     )
                 else:
                     print("No download URL found in the bitstream.")
@@ -220,6 +221,7 @@ def retrieve_item_file(
             file_name,
             total_size_in_bytes,
             position,
+            proxies=proxies,
         )
 
     return file_path, item_details
