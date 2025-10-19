@@ -13,6 +13,7 @@ def download_file(
     file_name: str,
     total_size_in_bytes: int,
     position: int = 0,
+    proxies: Optional[dict] = None,
 ) -> None:
     """
     Download a file from DSpace and save it locally.
@@ -23,8 +24,12 @@ def download_file(
         file_name: Name to save the file as.
         total_size_in_bytes: Size of the file in Bytes.
         position: Position of the progress bar in tqdm output.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
     """
-    file_response = requests.get(file_url, stream=True)
+    if proxies:
+        file_response = requests.get(file_url, stream=True, proxies=proxies)
+    else:
+        file_response = requests.get(file_url, stream=True)
 
     if file_response.status_code == 200:
         file_path = os.path.join(output_path, file_name)
@@ -56,6 +61,7 @@ def fetch_and_download_files(
     base_url_rest: str,
     items_ids: List[str],
     output_path: str,
+    proxies: Optional[dict] = None,
 ) -> None:
     """
     Fetch item bitstreams and download their files.
@@ -65,10 +71,14 @@ def fetch_and_download_files(
         base_url_rest: Base URL for DSpace REST API.
         items_ids: List of item IDs whose files will be downloaded.
         output_path: Directory path where files will be saved.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
     """
     for item_id in items_ids:
         item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-        response = requests.get(item_url)
+        if proxies:
+            response = requests.get(item_url, proxies=proxies)
+        else:
+            response = requests.get(item_url)
 
         if response.status_code == 200:
             item_details = response.json()
@@ -88,6 +98,7 @@ def fetch_and_download_files(
                         output_path,
                         file_name,
                         total_size_in_bytes,
+                        proxies=proxies,
                     )
                 else:
                     print("No download URL found in the bitstream.")
@@ -144,6 +155,7 @@ def retrieve_item_file(
     item_id: str,
     folder_path: str,
     position: int,
+    proxies: Optional[dict] = None,
 ) -> tuple[Optional[str], Optional[dict]]:
     """
     Retrive and download a single item's first bitstreams and return metadata.
@@ -154,11 +166,12 @@ def retrieve_item_file(
         item_id: ID of the item to retrieve.
         folder_path: Directory path where the file will be saved.
         position. Position of the progress bar in tqdm output.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         Tuple (local_file_path, item_metadata) if succesful, (None, None) otherwise.
     """
-    item_details = get_item_details(base_url_rest, item_id)
+    item_details = get_item_details(base_url_rest, item_id, proxies=proxies)
 
     if not item_details:
         tqdm.write(f"[WARNING] Could not get details for item {item_id}")
@@ -208,6 +221,7 @@ def retrieve_item_file(
             file_name,
             total_size_in_bytes,
             position,
+            proxies=proxies,
         )
 
     return file_path, item_details
