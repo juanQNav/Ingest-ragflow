@@ -12,6 +12,7 @@ def get_items(
     max_retries: int = 3,
     verbose: bool = False,
     limit_items: Optional[int] = None,
+    proxies: Optional[dict] = None,
 ) -> Optional[List[dict]]:
     """
     Retrieve items from DSpace.
@@ -22,6 +23,7 @@ def get_items(
         max_retries: Maximum number of retries for failed requests.
         verbose: Wheter to print detailed information.
         limit_items: Total number of retrieve items.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         List of dictionaries containing metadata on the items, otherwise none.
@@ -51,7 +53,14 @@ def get_items(
         # Retry mechanism
         for attempt in range(max_retries):
             try:
-                response = requests.get(items_url, params=params)
+                if proxies:
+                    response = requests.get(
+                        items_url, params=params, proxies=proxies, timeout=120
+                    )
+                else:
+                    response = requests.get(
+                        items_url, params=params, timeout=120
+                    )
                 break
             except Exception as e:
                 if verbose:
@@ -134,13 +143,16 @@ def get_items_ids(items: List[dict]) -> list[str]:
     return items_ids
 
 
-def get_item_metadata(base_url_rest: str, item_id: str) -> Optional[dict]:
+def get_item_metadata(
+    base_url_rest: str, item_id: str, proxies: Optional[dict] = None
+) -> Optional[dict]:
     """
     Get complete metadata for a single item from DSpace REST API.
 
     Args:
         base_url_rest: Base URL for DSpace REST API.
         item_id: UUID of the item.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Return:
         Dictionary with item metadata or None if error.
@@ -148,7 +160,10 @@ def get_item_metadata(base_url_rest: str, item_id: str) -> Optional[dict]:
     item_url = f"{base_url_rest}/items/{item_id}/metadata"
 
     try:
-        response = requests.get(item_url)
+        if proxies:
+            response = requests.get(item_url, proxies=proxies, timeout=120)
+        else:
+            response = requests.get(item_url, timeout=120)
         if response.status_code == 200:
             raw_metadata = response.json()
             metadata = {}
@@ -171,13 +186,16 @@ def get_item_metadata(base_url_rest: str, item_id: str) -> Optional[dict]:
         return None
 
 
-def get_item_details(base_url_rest: str, item_id: str) -> Optional[dict]:
+def get_item_details(
+    base_url_rest: str, item_id: str, proxies: Optional[dict] = None
+) -> Optional[dict]:
     """
     Get complete item details including metadata and bitstreams info.
 
     Args:
         base_url_rest: Base URL for DSpace REST API.
         item_id:  UUID of item.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         Dictionary with complete item details.
@@ -185,11 +203,16 @@ def get_item_details(base_url_rest: str, item_id: str) -> Optional[dict]:
     item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams,metadata"
 
     try:
-        response = requests.get(item_url)
+        if proxies:
+            response = requests.get(item_url, proxies=proxies, timeout=120)
+        else:
+            response = requests.get(item_url, timeout=120)
         if response.status_code == 200:
             item_data = response.json()
 
-            metadata = get_item_metadata(base_url_rest, item_id)
+            metadata = get_item_metadata(
+                base_url_rest, item_id, proxies=proxies
+            )
 
             item_details = {
                 "uuid": item_data.get("uuid"),
@@ -215,7 +238,7 @@ def get_item_details(base_url_rest: str, item_id: str) -> Optional[dict]:
 
 
 def get_item_stats(
-    base_url_rest: str, item: dict
+    base_url_rest: str, item: dict, proxies: Optional[dict] = None
 ) -> tuple[str, str, str, int]:
     """
     Calculate stats for a single item.
@@ -223,6 +246,7 @@ def get_item_stats(
     Args:
         base_url_rest: Base URL for DSpace REST API.
         item: dictionary that containing metadata about one item.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         - tuple[str, str, int]: a tuple with uuid, name, name file with extension and size of the file in Bytes.
@@ -234,7 +258,10 @@ def get_item_stats(
     size_Bytes = 0
 
     item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-    response = requests.get(item_url)
+    if proxies:
+        response = requests.get(item_url, proxies=proxies, timeout=120)
+    else:
+        response = requests.get(item_url, timeout=120)
 
     if response.status_code == 200:
         item_details = response.json()
@@ -245,25 +272,29 @@ def get_item_stats(
     return item_id, name, name_file, size_Bytes
 
 
-def generate_item_stats(base_url_rest: str, verbose=True) -> pd.DataFrame:
+def generate_item_stats(
+    base_url_rest: str, verbose=True, proxies: Optional[dict] = None
+) -> pd.DataFrame:
     """
     Generate statistics for all items in DSpace
 
     Args:
         base_url_rest: Base URL for DSpace Rest API.
+        verbose: Whether to print detailed information.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         pd.DataFrame: DataFrame with item statistics, including
         summary row  with document counts and total size.
     """
-    items = get_items(base_url_rest, verbose=verbose)
+    items = get_items(base_url_rest, verbose=verbose, proxies=proxies)
     data = []
     total_documents = 0
     total_size_all_items = 0
 
     for item in tqdm(items, desc="Processing items"):
         item_id, name, name_file, size_Bytes = get_item_stats(
-            base_url_rest, item
+            base_url_rest, item, proxies=proxies
         )
 
         data.append(

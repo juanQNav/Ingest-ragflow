@@ -60,6 +60,7 @@ def process_item(
     ragflow_dataset: DataSet,
     lock,
     documents_ids: list[str],
+    proxies: Optional[dict] = None,
 ) -> tuple[Optional[str], Optional[dict]]:
     """
     Process a single item: download file and return metadata.
@@ -72,7 +73,8 @@ def process_item(
         position: Position of the progress bar in tqdm output.
         ragflow_dataset: RagFlow dataset object.
         lock: Threading lock to ensure thread-safe upload/parse.
-        documents_ids:
+        documents_ids: List of document IDs.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         Tuple (ragflow_document_id, item_metadata) if succesful, (None, None) otherwise.
@@ -83,6 +85,7 @@ def process_item(
         item_id=item_id,
         folder_path=folder_path,
         position=position,
+        proxies=proxies,
     )
 
     if file_path and file_path.endswith(".pdf") and item_metadata:
@@ -122,6 +125,7 @@ def process_items_in_parallel(
     max_concurrent_tasks: int = 5,
     limit_items: Optional[int] = None,
     exclude_uuids: Optional[set[str]] = None,
+    proxies: Optional[dict] = None,
 ) -> dict[str, str]:
     """
     Process items in parallel:
@@ -139,6 +143,7 @@ def process_items_in_parallel(
         max_concurrent_tasks: Maximum number of concurrent tasks.
         limit_items: Total number of retrieve items.
         exclude_uuids: Set of UUIDs to exclude from prossesing.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         Dictionary mapping ragflow_document_id to item metadata.
@@ -150,7 +155,9 @@ def process_items_in_parallel(
     if exclude_uuids is None:
         exclude_uuids = set()
 
-    def process_single_item(item_id, position):
+    def process_single_item(
+        item_id: str, position: int, proxies: Optional[dict] = None
+    ):
         with semaphore:
             ragflow_id, metadata = process_item(
                 base_url=base_url,
@@ -161,13 +168,19 @@ def process_items_in_parallel(
                 ragflow_dataset=ragflow_dataset,
                 lock=lock,
                 documents_ids=document_ids,
+                proxies=proxies,
             )
             if ragflow_id and metadata:
                 with lock:
                     metadata_map[ragflow_id] = metadata
 
     with ThreadPoolExecutor() as executor:
-        items = get_items(base_url_rest, verbose=True, limit_items=limit_items)
+        items = get_items(
+            base_url_rest,
+            verbose=True,
+            limit_items=limit_items,
+            proxies=proxies,
+        )
         if items is not None:
             items_ids = get_items_ids(items)
         else:
@@ -212,6 +225,7 @@ def process_collections_in_parallel(
     document_ids: list[str],
     max_concurrent_tasks: int = 5,
     exclude_uuids: Optional[set[str]] = None,
+    proxies: Optional[dict] = None,
 ) -> dict[str, str]:
     """
     Process collections in parallel:
@@ -229,6 +243,7 @@ def process_collections_in_parallel(
         document_ids: List to store parsed document IDs.
         max_concurrent_tasks: Maximum number of concurrent tasks.
         exclude_uuids: Set of UUIDs to exclude from prossesing.
+        proxies: Optional dict proxy configuration (e.g. SOCKS5).
 
     Returns:
         Dictionary mapping ragflow_document_id to item metadata.
@@ -240,7 +255,9 @@ def process_collections_in_parallel(
     if exclude_uuids is None:
         exclude_uuids = set()
 
-    def process_single_item(item_id, position):
+    def process_single_item(
+        item_id: str, position: int, proxies: Optional[dict] = None
+    ):
         with semaphore:
             ragflow_id, metadata = process_item(
                 base_url=base_url,
@@ -251,6 +268,7 @@ def process_collections_in_parallel(
                 ragflow_dataset=ragflow_dataset,
                 lock=lock,
                 documents_ids=document_ids,
+                proxies=proxies,
             )
             if ragflow_id and metadata:
                 with lock:
@@ -260,7 +278,7 @@ def process_collections_in_parallel(
         items_ids = []
         for id_collection in collections_ids:
             items = get_items_from_collection(
-                id_collection, base_url_rest, verbose=False
+                id_collection, base_url_rest, verbose=False, proxies=proxies
             )
             if items is not None:
                 items_ids.extend(items)

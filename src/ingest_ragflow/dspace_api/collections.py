@@ -6,7 +6,10 @@ from tqdm import tqdm
 
 
 def get_items_from_collection(
-    collection_id: str, base_url_rest: str, verbose: bool = False
+    collection_id: str,
+    base_url_rest: str,
+    verbose: bool = False,
+    proxies: Optional[dict] = None,
 ) -> Optional[List[str]]:
     """
     Retrieve item IDs from a collection.
@@ -15,6 +18,7 @@ def get_items_from_collection(
         collection_id: Collection ID from DSpace.
         base_url_rest: Base URL for DSpace REST API.
         verbose: Wheter to print detailed information.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         List of item IDs of found, otherwise None.
@@ -22,7 +26,10 @@ def get_items_from_collection(
     items_url = f"{base_url_rest}/collections/{collection_id}/items"
     if verbose:
         print(f"Getting items from collection {collection_id}...")
-    response = requests.get(items_url)
+    if proxies:
+        response = requests.get(items_url, proxies=proxies)
+    else:
+        response = requests.get(items_url)
 
     if response.status_code == 200:
         items = response.json()
@@ -45,7 +52,7 @@ def get_items_from_collection(
 
 
 def get_collections(
-    base_url_rest: str, verbose: bool = False
+    base_url_rest: str, verbose: bool = False, proxies: Optional[dict] = None
 ) -> Optional[List[str]]:
     """
     Retrieve all collections from DSpace
@@ -53,6 +60,7 @@ def get_collections(
     Args:
         base_url_rest: Base URL for DSpace REST API.
         verbose: Wheter to print detailed information.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         List of collection IDs if found, otherwise None.
@@ -60,7 +68,10 @@ def get_collections(
     collections_url = f"{base_url_rest}/collections"
     if verbose:
         print(f"Getting collections from {collections_url}...")
-    response = requests.get(collections_url)
+    if proxies:
+        response = requests.get(collections_url, proxies=proxies)
+    else:
+        response = requests.get(collections_url)
 
     if response.status_code == 200:
         collections = response.json()
@@ -115,7 +126,9 @@ def select_collection(collections_ids: List[str]) -> str:
 
 
 def get_collection_stats(
-    base_url_rest: str, collection_id: str
+    base_url_rest: str,
+    collection_id: str,
+    proxies: Optional[dict] = None,
 ) -> tuple[int, int]:
     """
     Calculate  stats for a single collection.
@@ -123,6 +136,7 @@ def get_collection_stats(
     Args:
         base_url_rest: Base URL for DSpace REST API.
         collection_id: Collection ID to retrieve stats from.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         A tuple (item_count, total_size) where:
@@ -135,7 +149,10 @@ def get_collection_stats(
 
     for item_id in items_ids:
         item_url = f"{base_url_rest}/items/{item_id}?expand=bitstreams"
-        response = requests.get(item_url)
+        if proxies:
+            response = requests.get(item_url, proxies=proxies)
+        else:
+            response = requests.get(item_url)
 
         if response.status_code == 200:
             item_details = response.json()
@@ -146,12 +163,15 @@ def get_collection_stats(
     return item_count, total_size
 
 
-def generate_collection_stats(base_url_rest: str) -> pd.DataFrame:
+def generate_collection_stats(
+    base_url_rest: str, proxies: Optional[dict] = None
+) -> pd.DataFrame:
     """
     Generate statistics for all collections in DSpace.
 
     Args:
         base_url_rest: Base URL for DSpace REST API.
+        proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
         pd.DataFrame: DataFrame with collection statistics, including
@@ -164,7 +184,10 @@ def generate_collection_stats(base_url_rest: str) -> pd.DataFrame:
 
     for collection_id in tqdm(collections_ids, desc="Processing collections"):
         collection_url = f"{base_url_rest}/collections/{collection_id}"
-        response = requests.get(collection_url)
+        if proxies:
+            response = requests.get(collection_url, proxies=proxies)
+        else:
+            response = requests.get(collection_url)
 
         if response.status_code == 200:
             collection_details = response.json()
