@@ -206,7 +206,7 @@ def process_items_in_parallel(
             )
 
         futures = [
-            executor.submit(process_single_item, item_id, index)
+            executor.submit(process_single_item, item_id, index, proxies)
             for index, item_id in enumerate(items_ids_filtered)
         ]
 
