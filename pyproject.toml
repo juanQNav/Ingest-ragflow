@@ -26,6 +26,10 @@ build-backend = "hatchling.build"
 dev = [
 	"ingest-ragflow",
 	"ruff>=0.13.2",
+	"flake8>=7.1.1,<7.2",
+	"coverage>=7.10,<7.11",
+	"pytest>=8.4.1",
+	"setuptools>=80.9.0",
 ]
 
 [tool.uv.sources]
