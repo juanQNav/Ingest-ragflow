@@ -74,5 +74,7 @@ if __name__ == "__main__":
     documents = dataset.list_documents()
     for doc in documents:
         print(
-            f"Document: {doc.name}, State: {doc.run}, Fragments: {doc.chunk_count}"
+            f"Document: {doc.name}, "
+            f"State: {doc.run}, "
+            f"Fragments: {doc.chunk_count}"
         )

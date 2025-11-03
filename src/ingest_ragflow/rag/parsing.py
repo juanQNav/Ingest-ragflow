@@ -77,7 +77,8 @@ def process_item(
         proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
-        Tuple (ragflow_document_id, item_metadata) if succesful, (None, None) otherwise.
+        Tuple (ragflow_document_id, item_metadata) if succesful,
+        (None, None) otherwise.
     """
     file_path, item_metadata = retrieve_item_file(
         base_url=base_url,
@@ -194,7 +195,8 @@ def process_items_in_parallel(
         skipped_count = len(items_ids) - len(items_ids_filtered)
         if skipped_count > 0:
             tqdm.write(
-                f"[INFO] Skipping {skipped_count} items that already exist in database"
+                f"[INFO] Skipping {skipped_count} items that "
+                "already exist in database"
             )
 
         if not items_ids_filtered:
@@ -290,7 +292,8 @@ def process_collections_in_parallel(
         skipped_count = len(items_ids) - len(items_ids_filtered)
         if skipped_count > 0:
             tqdm.write(
-                f"[INFO] Skipping {skipped_count} items that already exist in database"
+                f"[INFO] Skipping {skipped_count} items that"
+                "already exist in database"
             )
 
         if not items_ids_filtered:
@@ -409,7 +412,8 @@ async def monitor_parsing(
 
             if consecutive_errors <= max_retries:
                 tqdm.write(
-                    f"[WARNING] Network error during monitoring ({error_type}): {str(e)[:100]}"
+                    "[WARNING] Network error during monitoring "
+                    f"({error_type}): {str(e)[:100]}"
                 )
                 tqdm.write(
                     f"[INFO] Retrying in {retry_delay} seconds..."
@@ -420,7 +424,8 @@ async def monitor_parsing(
             else:
                 tqdm.write(
                     f"[Error] Max retries ({max_retries}) exceeded."
-                    "Stopping monitoring but documents may still be processing."
+                    "Stopping monitoring but documents "
+                    "may still be processing."
                 )
                 break
     for bar in progress_bars.values():

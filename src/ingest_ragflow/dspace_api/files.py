@@ -169,7 +169,8 @@ def retrieve_item_file(
         proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
-        Tuple (local_file_path, item_metadata) if succesful, (None, None) otherwise.
+        Tuple (local_file_path, item_metadata) if succesful,
+              (None, None) otherwise.
     """
     item_details = get_item_details(base_url_rest, item_id, proxies=proxies)
 
@@ -212,7 +213,8 @@ def retrieve_item_file(
         bundle_name = primary_bitstream.get("bundleName", "UNKNOWN")
 
         tqdm.write(
-            f"[INFO] Downloading primary PDF from bundle '{bundle_name}': {file_name}"
+            "[INFO] Downloading primary PDF from bundle "
+            f"'{bundle_name}': {file_name}"
         )
 
         download_file(

@@ -3,7 +3,9 @@ from setuptools import find_packages, setup
 setup(
     name="ingest_ragflow",
     version="0.1.0",
-    description="This repository contains code for integrating and using various components, including the DSpace API and a knowledge base in Ragflow.",
+    description="This repository contains code for integrating "
+    "and using various components, including the "
+    "DSpace API and a knowledge base in Ragflow.",
     author="juanQNav et al.",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
