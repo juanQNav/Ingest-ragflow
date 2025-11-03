@@ -2,4 +2,4 @@
 paths = src, tests
 max-line-length = 79
 exclude = .git,__pycache__,*.pyc,.venv
-ignore = E203
+ignore = E203, W503
