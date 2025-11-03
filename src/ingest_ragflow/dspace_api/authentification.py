@@ -4,7 +4,7 @@ from requests import Session
 
 def authenticate_user(
     session: Session, email: str, password: str, base_url_rest: str
-) -> None:
+) -> bool:
     """
     Authenticate a user with DSpace API.
 
@@ -23,6 +23,7 @@ def authenticate_user(
         response = session.post(login_url, data=credentials)
         response.raise_for_status()
         print("Successful authentication.")
+        return True
     except requests.exceptions.RequestException as e:
         print(f"Authentication error: {e}")
-        exit()
+        return False

@@ -1,0 +1,17 @@
+[run]
+source = 
+  src/ingest_ragflow
+omit = 
+  */__init__.py
+  */__pycache__/*
+  tests/*
+  scripts/*
+  */venv/*
+  */.venv/*
+  */site-packages/*
+  */data/*
+  */notebooks/
+
+[report]
+show_missing = True
+skip_covered = False

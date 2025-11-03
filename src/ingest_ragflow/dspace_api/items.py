@@ -95,13 +95,16 @@ def get_items(
                     duplicates_found = len(items_retrieved) - len(unique_items)
                     if duplicates_found > 0:
                         print(
-                            f"Found {duplicates_found} duplicate items (same UUID), skipping..."
+                            f"Found {duplicates_found} duplicate "
+                            "items (same UUID), skipping..."
                         )
                     print(
-                        f"Retrieved {len(items_retrieved)} items from offset {offset} (total: {len(items)})"
+                        f"Retrieved {len(items_retrieved)} items from "
+                        f"offset {offset} (total: {len(items)})"
                     )
                 offset += len(items_retrieved)
-                # If no unique items were added, we might be stuck in duplicates
+                # If no unique items were added,
+                # we might be stuck in duplicates
                 if len(unique_items) == 0:
                     if verbose:
                         print("No new unique items found. Finishing...")
@@ -127,7 +130,8 @@ def get_items_ids(items: List[dict]) -> list[str]:
     Return item IDs
 
     Args:
-        - items: List of dictionaries containing all the metadata about the items.
+        - items: List of dictionaries containing
+          all the metadata about the items.
     Returns:
         - List of item IDs.
     """
@@ -178,7 +182,8 @@ def get_item_metadata(
             return metadata
         else:
             print(
-                f"Error {response.status_code} getting metadata for item {item_id}"
+                f"Error {response.status_code} getting "
+                f"metadata for item {item_id}"
             )
             return None
     except Exception as e:
@@ -229,7 +234,8 @@ def get_item_details(
             return item_details
         else:
             print(
-                f"Error {response.status_code} getting details for item {item_id}"
+                f"Error {response.status_code} getting details "
+                f"for item {item_id}"
             )
             return None
     except Exception as e:
@@ -249,7 +255,8 @@ def get_item_stats(
         proxies: Optional dict for proxy configuration (e.g. SOCKS5).
 
     Returns:
-        - tuple[str, str, int]: a tuple with uuid, name, name file with extension and size of the file in Bytes.
+        - tuple[str, str, int]: a tuple with uuid, name, name file
+          with extension and size of the file in Bytes.
     """
 
     item_id = str(item.get("uuid"))
