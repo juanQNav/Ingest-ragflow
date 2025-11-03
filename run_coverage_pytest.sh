@@ -1,5 +1,5 @@
 # !/bin/bash
 
-soruce source .venv/bin/activate
+source .venv/bin/activate
 uv run coverage run -m pytest -v
 uv run coverage report -m
