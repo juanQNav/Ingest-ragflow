@@ -227,3 +227,27 @@ def retrieve_item_file(
         )
 
     return file_path, item_details
+
+
+def get_files_from_metadata(metadata_map_done: dict) -> list[str]:
+    """
+    Extract file names from the metadata map of documents
+    processed in this execution.
+
+    Args:
+        metadata_map_done: Dictionary mapping
+            ragflow_document_id to item metadata.
+
+    Returns:
+        List of strings with names of pdf files.
+    """
+    file_names = []
+    for item_metadata in metadata_map_done.values():
+        bitstreams = item_metadata.get("bitstreams", [])
+        if bitstreams:
+            # Get the first bitstream's name (the PDF)
+            file_name = bitstreams[0].get("name")
+            if file_name:
+                file_names.append(file_name)
+
+    return file_names
