@@ -121,3 +121,43 @@ class TestFiles(TestCase):
 
         mock_get.assert_called()
         mock_download.assert_called_once()
+
+    def test_empty_metadata_map(self):
+        result = f.get_files_from_metadata({})
+        assert result == []
+
+    def test_single_item_with_pdf(self):
+        metadata_map = {
+            "doc_123": {
+                "bitstreams": [
+                    {"name": "document.pdf", "type": "application/pdf"}
+                ]
+            }
+        }
+        result = f.get_files_from_metadata(metadata_map)
+        assert result == ["document.pdf"]
+
+    def test_multiple_items_with_pdfs(self):
+        metadata_map = {
+            "doc_123": {"bitstreams": [{"name": "first.pdf"}]},
+            "doc_456": {"bitstreams": [{"name": "second.pdf"}]},
+            "doc_789": {"bitstreams": [{"name": "third.pdf"}]},
+        }
+        result = f.get_files_from_metadata(metadata_map)
+        assert len(result) == 3
+        assert "first.pdf" in result
+        assert "second.pdf" in result
+        assert "third.pdf" in result
+
+    def test_item_with_multiple_bitstreams(self):
+        metadata_map = {
+            "doc_123": {
+                "bitstreams": [
+                    {"name": "main.pdf"},
+                    {"name": "supplementary.pdf"},
+                    {"name": "other.docx"},
+                ]
+            }
+        }
+        result = f.get_files_from_metadata(metadata_map)
+        assert result == ["main.pdf"]
