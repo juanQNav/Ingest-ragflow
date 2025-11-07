@@ -70,3 +70,37 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
             {"displayed_name": os.path.basename(pdf), "blob": blob}
             for pdf, blob in zip(pdf_files, results)
         ]
+
+
+def remove_temp_pdf(folder_path: str, processed_file_names: list[str]) -> bool:
+    """
+    Remove temporal pdf files after the parser has processed it.
+
+    Args:
+        folder_path: Directory path where the file will be saved.
+        processed_file_names: file names list of the files with DONE
+            status in RAGFlow.
+
+    Returns:
+        bool: True if the folder exists and the removal process was
+            attempted (regardless of individual file success/failure),
+            False if the folder path does not exist or is not a directory.
+    """
+    if os.path.isdir(folder_path):
+        for file in processed_file_names:
+            file_path_complete = os.path.join(folder_path, file)
+            if os.path.exists(file_path_complete):
+                try:
+                    os.remove(file_path_complete)
+                    print(f"File {file_path_complete} has been removed.")
+                except Exception as e:
+                    print(f"Error removing file {file_path_complete}: {e}")
+            else:
+                print(
+                    f"File {file_path_complete} does not exists"
+                    "(likely from previous execution), skipping..."
+                )
+
+        return True
+    else:
+        return False
