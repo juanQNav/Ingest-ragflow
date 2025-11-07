@@ -1,4 +1,8 @@
+import tempfile
+from io import StringIO
+from pathlib import Path
 from unittest import TestCase, mock
+from unittest.mock import patch
 
 from ingest_ragflow.rag import files as rf
 
@@ -44,3 +48,40 @@ class TestRagFiles(TestCase):
         self.assertEqual(result[0]["blob"], b"data1")
         self.assertEqual(result[1]["displayed_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
+
+
+class TestRemoveFiles(TestCase):
+    def test_remove_single_existing_file(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            # Create a test PDF file
+            test_file = Path(tmp_path) / "test.pdf"
+            test_file.write_text("dummy pdf content")
+
+            self.assertTrue(test_file.exists())
+            result = rf.remove_temp_pdf(tmp_path, ["test.pdf"])
+
+            self.assertTrue(result)
+            self.assertFalse(test_file.exists())
+
+    def test_remove_multiple_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            # Create multiple test files
+            files = ["file1.pdf", "file2.pdf", "file3.pdf"]
+            for filename in files:
+                (Path(tmp_path) / filename).write_text("content")
+
+            result = rf.remove_temp_pdf(tmp_path, files)
+
+            self.assertTrue(result)
+            for filename in files:
+                self.assertFalse((Path(tmp_path) / filename).exists())
+
+    def test_file_does_not_exist(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                result = rf.remove_temp_pdf(tmp_path, ["nonexistent.pdf"])
+
+                captured = mock_stdout.getvalue()
+                self.assertTrue(result)
+                self.assertIn("does not exists", captured)
+                self.assertIn("skipping", captured)

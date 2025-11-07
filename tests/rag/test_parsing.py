@@ -126,3 +126,76 @@ class TestParsing(TestCase):
             )
 
         asyncio.run(run_monitor())
+
+
+class TestFilterDoneDocuments(TestCase):
+    def setUp(self):
+        self.mock_dataset = mock.Mock()
+
+    def test_filter_only_done_documents(self):
+        # Create mock documents with different statuses
+        doc1 = mock.Mock(id="doc1", run="DONE")
+        doc2 = mock.Mock(id="doc2", run="PROCESSING")
+        doc3 = mock.Mock(id="doc3", run="DONE")
+        doc4 = mock.Mock(id="doc4", run="FAILED")
+
+        self.mock_dataset.list_documents.return_value = [
+            doc1,
+            doc2,
+            doc3,
+            doc4,
+        ]
+
+        metadata_map = {
+            "doc1": {"file": "file1.pdf", "status": "ready"},
+            "doc2": {"file": "file2.pdf", "status": "pending"},
+            "doc3": {"file": "file3.pdf", "status": "ready"},
+            "doc4": {"file": "file4.pdf", "status": "error"},
+        }
+
+        result = rp.filter_done_documents(self.mock_dataset, metadata_map)
+
+        # Only doc1 and doc3 should be in result
+        self.assertEqual(len(result), 2)
+        self.assertIn("doc1", result)
+        self.assertIn("doc3", result)
+        self.assertNotIn("doc2", result)
+        self.assertNotIn("doc4", result)
+
+    def test_empty_metadata_map(self):
+        doc1 = mock.Mock(id="doc1", run="DONE")
+        self.mock_dataset.list_documents.return_value = [doc1]
+
+        result = rp.filter_done_documents(self.mock_dataset, {})
+
+        self.assertEqual(result, {})
+
+    def test_no_done_documents(self):
+        doc1 = mock.Mock(id="doc1", run="PROCESSING")
+        doc2 = mock.Mock(id="doc2", run="FAILED")
+
+        self.mock_dataset.list_documents.return_value = [doc1, doc2]
+
+        metadata_map = {
+            "doc1": {"file": "file1.pdf"},
+            "doc2": {"file": "file2.pdf"},
+        }
+
+        result = rp.filter_done_documents(self.mock_dataset, metadata_map)
+
+        self.assertEqual(result, {})
+
+    def test_all_documents_done(self):
+        doc1 = mock.Mock(id="doc1", run="DONE")
+        doc2 = mock.Mock(id="doc2", run="DONE")
+
+        self.mock_dataset.list_documents.return_value = [doc1, doc2]
+
+        metadata_map = {
+            "doc1": {"file": "file1.pdf"},
+            "doc2": {"file": "file2.pdf"},
+        }
+
+        result = rp.filter_done_documents(self.mock_dataset, metadata_map)
+
+        self.assertEqual(result, metadata_map)
