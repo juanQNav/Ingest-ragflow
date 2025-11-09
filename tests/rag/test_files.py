@@ -49,6 +49,75 @@ class TestRagFiles(TestCase):
         self.assertEqual(result[1]["displayed_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
 
+    def test_build_ragflow_id_docname_map_with_multiple_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "document1.pdf"
+        mock_doc1.id = "testid1"
+        mock_doc2 = mock.Mock()
+        mock_doc2.name = "document2.pdf"
+        mock_doc2.id = "testid2"
+        mock_doc3 = mock.Mock()
+        mock_doc3.name = "report.pdf"
+        mock_doc3.id = "testid3"
+
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.build_ragflow_id_docname_map(mock_dataset)
+
+        assert result == {
+            "testid1": "document1.pdf",
+            "testid2": "document2.pdf",
+            "testid3": "report.pdf",
+        }
+        assert len(result.items()) == 3
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_build_ragflow_id_docname_map_with_empty_dataset(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = mock_dataset.list_documents(mock_dataset)
+
+        assert result == []
+        assert len(result) == 0
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_names_with_multiple_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "document1.pdf"
+        mock_doc2 = mock.Mock()
+        mock_doc2.name = "document2.pdf"
+        mock_doc3 = mock.Mock()
+        mock_doc3.name = "report.pdf"
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_names(mock_dataset)
+
+        assert result == ["document1.pdf", "document2.pdf", "report.pdf"]
+        assert len(result) == 3
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_names_with_empty_dataset(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_names(mock_dataset)
+
+        # Assert
+        assert result == []
+        assert len(result) == 0
+        mock_dataset.list_documents.assert_called_once()
+
 
 class TestRemoveFiles(TestCase):
     def test_remove_single_existing_file(self):

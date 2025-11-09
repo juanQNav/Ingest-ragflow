@@ -1,6 +1,8 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 
+from ragflow_sdk import DataSet
+
 
 def read_binary_file(file_path: str) -> bytes:
     """
@@ -70,6 +72,50 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
             {"displayed_name": os.path.basename(pdf), "blob": blob}
             for pdf, blob in zip(pdf_files, results)
         ]
+
+
+def build_ragflow_id_docname_map(dataset: DataSet) -> dict:
+    """
+    Generate a mapping of RAGFlow document IDs to their PDF names.
+
+    Args:
+        dataset: RAGFlow dataset object
+
+    Returns:
+        dict: Mapping of {document_id: document_name}
+    """
+    document_id_to_name = {}
+
+    if dataset is None:
+        return document_id_to_name
+
+    for document in dataset.list_documents():
+        document_id_to_name[document.id] = document.name
+
+    return document_id_to_name
+
+
+def get_docs_names(dataset: DataSet) -> list[str]:
+    """
+    Extract all document names from a RAGFlow dataset.
+
+    This function retrieves the names of all documents currently stored in the
+    provided RAGFlow dataset. It's commonly used to check which documents exist
+    before uploading new ones or when displaying available documents.
+
+    Args:
+        dataset: RAGFlow DataSet object containing documents to list
+
+    Returns:
+        list[str]: A list of document names (typically PDF filenames)
+        from the dataset.
+        Returns an empty list if the dataset contains no documents.
+    """
+    documents_names = []
+    for document in dataset.list_documents():
+        documents_names.append(document.name)
+
+    return documents_names
 
 
 def remove_temp_pdf(folder_path: str, processed_file_names: list[str]) -> bool:
