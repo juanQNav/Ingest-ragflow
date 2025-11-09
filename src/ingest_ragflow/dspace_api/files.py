@@ -229,7 +229,7 @@ def retrieve_item_file(
     return file_path, item_details
 
 
-def get_files_from_metadata(metadata_map_done: dict) -> list[str]:
+def get_files_from_metadata(metadata_map: dict) -> list[str]:
     """
     Extract file names from the metadata map of documents
     processed in this execution.
@@ -242,7 +242,7 @@ def get_files_from_metadata(metadata_map_done: dict) -> list[str]:
         List of strings with names of pdf files.
     """
     file_names = []
-    for item_metadata in metadata_map_done.values():
+    for item_metadata in metadata_map.values():
         bitstreams = item_metadata.get("bitstreams", [])
         if bitstreams:
             # Get the first bitstream's name (the PDF)
