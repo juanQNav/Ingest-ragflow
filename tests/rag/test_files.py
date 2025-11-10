@@ -118,6 +118,23 @@ class TestRagFiles(TestCase):
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once()
 
+    def test_rename_document_with_extension(self):
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "doc1.pdf"
+        mock_doc1.update = mock.Mock(return_value=None)
+        name = "fake-uuid"
+
+        def update_sied_effect(data):
+            mock_doc1.name = data["name"]
+
+        mock_doc1.update.side_effect = update_sied_effect
+
+        result = rf.rename_document_name(mock_doc1, name)
+
+        self.assertTrue(result)
+        self.assertEqual(mock_doc1.name, f"{name}.pdf")
+        mock_doc1.update.assert_called_once_with({"name": f"{name}.pdf"})
+
 
 class TestRemoveFiles(TestCase):
     def test_remove_single_existing_file(self):
