@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 
-from ragflow_sdk import DataSet
+from ragflow_sdk import DataSet, Document
 
 
 def read_binary_file(file_path: str) -> bytes:
@@ -72,6 +72,29 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
             {"displayed_name": os.path.basename(pdf), "blob": blob}
             for pdf, blob in zip(pdf_files, results)
         ]
+
+
+def rename_document_name(document: Document, name: str) -> bool:
+    """
+    Rename document name.
+
+    Args:
+        document: RAGFlow document object.
+        name: New name for the document (without extension).
+    Returns:
+        boolean, True if rename document is success,
+        otherwise False.
+    """
+    original_name = document.name
+    extension = os.path.splitext(original_name)[1]
+    new_name = f"{name}{extension}"
+
+    try:
+        document.update({"name": new_name})
+        return document.name == new_name
+    except Exception as e:
+        print(f"Error renaming the document '{new_name}': {e}")
+        return False
 
 
 def build_ragflow_id_docname_map(dataset: DataSet) -> dict:
