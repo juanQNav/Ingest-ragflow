@@ -13,7 +13,10 @@ from tqdm import tqdm
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
 from ingest_ragflow.dspace_api.files import retrieve_item_file
 from ingest_ragflow.dspace_api.items import get_items, get_items_ids
-from ingest_ragflow.rag.files import generate_document_list
+from ingest_ragflow.rag.files import (
+    generate_document_list,
+    rename_document_name,
+)
 
 
 def upload_and_parse_file(
@@ -94,7 +97,9 @@ def process_item(
 
         with lock:
             ragflow_dataset.upload_documents(document)
-            documents_id = ragflow_dataset.list_documents()[0].id
+            document_rg = ragflow_dataset.list_documents()[0]
+            documents_id = document_rg.id
+            rename_document_name(document=document_rg, name=item_id)
             documents_ids.append(documents_id)
 
         try:
