@@ -29,23 +29,6 @@ class TestFiles(TestCase):
         )
         mock_file.assert_called_once_with("/tmp/file.pdf", "wb")
 
-    @mock.patch("ingest_ragflow.dspace_api.files.requests.get")
-    def test_get_primary_pdf_bitstream(self, _mock_get):
-        bitstreams = [
-            {"name": "doc1.pdf", "bundleName": "ORIGINAL", "sizeBytes": 100},
-            {"name": "doc2.pdf", "bundleName": "OTHER", "sizeBytes": 200},
-        ]
-        result = f.get_primary_pdf_bitstream(bitstreams)
-        self.assertIsNotNone(result)
-        if result is not None:
-            self.assertEqual(result["name"], "doc1.pdf")
-
-    def test_get_primary_pdf_bitstream_none(self):
-        result = f.get_primary_pdf_bitstream([])
-        self.assertIsNone(result)
-        result = f.get_primary_pdf_bitstream([{"name": "file.txt"}])
-        self.assertIsNone(result)
-
     @mock.patch("ingest_ragflow.dspace_api.files.get_item_details")
     @mock.patch("ingest_ragflow.dspace_api.files.download_file")
     @mock.patch("os.path.exists", return_value=False)

@@ -88,3 +88,20 @@ class TestItems(TestCase):
         self.assertEqual(df.iloc[0]["uuid"], "id1")
         self.assertEqual(df.iloc[0]["size_Bytes"], 1234)
         self.assertEqual(df.iloc[-1]["uuid"], "Total documents")
+
+    @mock.patch("ingest_ragflow.dspace_api.files.requests.get")
+    def test_get_primary_pdf_bitstream(self, _mock_get):
+        bitstreams = [
+            {"name": "doc1.pdf", "bundleName": "ORIGINAL", "sizeBytes": 100},
+            {"name": "doc2.pdf", "bundleName": "OTHER", "sizeBytes": 200},
+        ]
+        result = it.get_primary_pdf_bitstream(bitstreams)
+        self.assertIsNotNone(result)
+        if result is not None:
+            self.assertEqual(result["name"], "doc1.pdf")
+
+    def test_get_primary_pdf_bitstream_none(self):
+        result = it.get_primary_pdf_bitstream([])
+        self.assertIsNone(result)
+        result = it.get_primary_pdf_bitstream([{"name": "file.txt"}])
+        self.assertIsNone(result)
