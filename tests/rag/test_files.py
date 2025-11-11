@@ -49,17 +49,20 @@ class TestRagFiles(TestCase):
         self.assertEqual(result[1]["displayed_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
 
-    def test_build_ragflow_id_docname_map_with_multiple_documents(self):
+    def test_generate_ragflow_id_docname_map_with_multiple_documents(self):
         mock_dataset = mock.Mock()
         mock_doc1 = mock.Mock()
         mock_doc1.name = "document1.pdf"
         mock_doc1.id = "testid1"
+        mock_doc1.run = "DONE"
         mock_doc2 = mock.Mock()
         mock_doc2.name = "document2.pdf"
         mock_doc2.id = "testid2"
+        mock_doc2.run = "DONE"
         mock_doc3 = mock.Mock()
         mock_doc3.name = "report.pdf"
         mock_doc3.id = "testid3"
+        mock_doc3.run = "CANCEL"
 
         mock_dataset.list_documents.return_value = [
             mock_doc1,
@@ -67,17 +70,18 @@ class TestRagFiles(TestCase):
             mock_doc3,
         ]
 
-        result = rf.build_ragflow_id_docname_map(mock_dataset)
+        result = rf.generate_ragflow_id_docname_map(
+            mock_dataset, status="DONE"
+        )
 
         assert result == {
             "testid1": "document1.pdf",
             "testid2": "document2.pdf",
-            "testid3": "report.pdf",
         }
-        assert len(result.items()) == 3
+        self.assertEqual(len(result.items()), 2)
         mock_dataset.list_documents.assert_called_once()
 
-    def test_build_ragflow_id_docname_map_with_empty_dataset(self):
+    def test_generate_ragflow_id_docname_map_with_empty_dataset(self):
         mock_dataset = mock.Mock()
         mock_dataset.list_documents.return_value = []
 
@@ -91,20 +95,22 @@ class TestRagFiles(TestCase):
         mock_dataset = mock.Mock()
         mock_doc1 = mock.Mock()
         mock_doc1.name = "document1.pdf"
+        mock_doc1.run = "DONE"
         mock_doc2 = mock.Mock()
         mock_doc2.name = "document2.pdf"
+        mock_doc2.run = "DONE"
         mock_doc3 = mock.Mock()
         mock_doc3.name = "report.pdf"
+        mock_doc3.run = "CANCEL"
         mock_dataset.list_documents.return_value = [
             mock_doc1,
             mock_doc2,
-            mock_doc3,
         ]
 
-        result = rf.get_docs_names(mock_dataset)
+        result = rf.get_docs_names(mock_dataset, status="DONE")
 
-        assert result == ["document1.pdf", "document2.pdf", "report.pdf"]
-        assert len(result) == 3
+        self.assertEqual(result, ["document1.pdf", "document2.pdf"])
+        self.assertEqual(len(result), 2)
         mock_dataset.list_documents.assert_called_once()
 
     def test_get_docs_names_with_empty_dataset(self):
@@ -118,13 +124,13 @@ class TestRagFiles(TestCase):
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once()
 
-    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
     def test_get_orphaned_documents_with_multiple_documents_all_exist_in_db(
-        self, mock_build_map
+        self, mock_generate_map
     ):
         mock_dataset = mock.Mock()
 
-        mock_build_map.return_value = {
+        mock_generate_map.return_value = {
             "fake-uuid1": "uuid1.pdf",
             "fake-uuid2": "uuid2.pdf",
             "fake-uuid3": "uuid3.pdf",
@@ -136,17 +142,19 @@ class TestRagFiles(TestCase):
             dataset=mock_dataset, existing_uuids=existing_uuids
         )
 
-        mock_build_map.assert_called_once_with(dataset=mock_dataset)
+        mock_generate_map.assert_called_once_with(dataset=mock_dataset)
 
         expected_result = {}
 
         self.assertEqual(orphaned_documents, expected_result)
 
-    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
-    def test_get_orphaned_documents_with_partial_match(self, mock_build_map):
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_with_partial_match(
+        self, mock_generate_map
+    ):
         mock_dataset = mock.Mock()
 
-        mock_build_map.return_value = {
+        mock_generate_map.return_value = {
             "fake-uuid1": "uuid1.pdf",
             "fake-uuid2": "uuid2.pdf",
             "fake-uuid3": "uuid3.pdf",
@@ -158,7 +166,7 @@ class TestRagFiles(TestCase):
             dataset=mock_dataset, existing_uuids=existing_uuids
         )
 
-        mock_build_map.assert_called_once_with(dataset=mock_dataset)
+        mock_generate_map.assert_called_once_with(dataset=mock_dataset)
 
         expected_result = {
             "fake-uuid2": "uuid2",
@@ -177,13 +185,13 @@ class TestRagFiles(TestCase):
         expected_result = {}
         self.assertDictEqual(orphaned_documents, expected_result)
 
-    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
     def test_get_orphaned_documents_empty_when_no_documents(
-        self, mock_build_map
+        self, mock_generate_map
     ):
         mock_dataset = mock.Mock()
 
-        mock_build_map.return_value = {}
+        mock_generate_map.return_value = {}
 
         existing_uuids = {"uuid1", "uuid2"}
 
@@ -195,11 +203,13 @@ class TestRagFiles(TestCase):
 
         self.assertEqual(orphaned_documents, expected_result)
 
-    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
-    def test_get_orphaned_documents_all_when_not_in_db(self, mock_build_map):
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_all_when_not_in_db(
+        self, mock_generate_map
+    ):
         mock_dataset = mock.Mock()
 
-        mock_build_map.return_value = {
+        mock_generate_map.return_value = {
             "fake-uuid1": "uuid11.pdf",
             "fake-uuid2": "uuid22.pdf",
             "fake-uuid3": "uuid33.pdf",

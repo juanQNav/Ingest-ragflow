@@ -1,5 +1,6 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 from ragflow_sdk import DataSet, Document
 
@@ -115,7 +116,7 @@ def get_orphaned_documents(
     if dataset is None:
         return orphaned_documents_map
 
-    documents_id_name_map = build_ragflow_id_docname_map(dataset=dataset)
+    documents_id_name_map = generate_ragflow_id_docname_map(dataset=dataset)
 
     for doc_id, doc_name in documents_id_name_map.items():
         doc_uuid = str(doc_name).replace(".pdf", "")
@@ -125,9 +126,13 @@ def get_orphaned_documents(
     return orphaned_documents_map
 
 
-def build_ragflow_id_docname_map(dataset: DataSet) -> dict:
+def generate_ragflow_id_docname_map(
+    dataset: DataSet, status: Optional[str] = None
+) -> dict:
     """
-    Generate a mapping of RAGFlow document IDs to their PDF names.
+    Generate a mapping of RAGFlow document IDs with specific status
+    to their PDF names. If status is None, then use all documents
+    regardless of their status.
 
     Args:
         dataset: RAGFlow dataset object
@@ -141,14 +146,19 @@ def build_ragflow_id_docname_map(dataset: DataSet) -> dict:
         return document_id_to_name
 
     for document in dataset.list_documents():
-        document_id_to_name[document.id] = document.name
+        document_status = str(getattr(document, "run", None))
+        if document_status == status or status is None:
+            document_id_to_name[document.id] = document.name
 
     return document_id_to_name
 
 
-def get_docs_names(dataset: DataSet) -> list[str]:
+def get_docs_names(
+    dataset: DataSet, status: Optional[str] = None
+) -> list[str]:
     """
-    Extract all document names from a RAGFlow dataset.
+    Extract all document names from a RAGFlow dataset with specific status.
+    If status is None, then use all documents regardless od their status.
 
     This function retrieves the names of all documents currently stored in the
     provided RAGFlow dataset. It's commonly used to check which documents exist
@@ -164,7 +174,9 @@ def get_docs_names(dataset: DataSet) -> list[str]:
     """
     documents_names = []
     for document in dataset.list_documents():
-        documents_names.append(document.name)
+        document_status = str(getattr(document, "run", None))
+        if document_status == status or status is None:
+            documents_names.append(document.name)
 
     return documents_names
 
