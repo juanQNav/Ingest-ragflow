@@ -118,6 +118,107 @@ class TestRagFiles(TestCase):
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once()
 
+    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    def test_get_orphaned_documents_with_multiple_documents_all_exist_in_db(
+        self, mock_build_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_build_map.return_value = {
+            "fake-uuid1": "uuid1.pdf",
+            "fake-uuid2": "uuid2.pdf",
+            "fake-uuid3": "uuid3.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid2", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        mock_build_map.assert_called_once_with(dataset=mock_dataset)
+
+        expected_result = {}
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    def test_get_orphaned_documents_with_partial_match(self, mock_build_map):
+        mock_dataset = mock.Mock()
+
+        mock_build_map.return_value = {
+            "fake-uuid1": "uuid1.pdf",
+            "fake-uuid2": "uuid2.pdf",
+            "fake-uuid3": "uuid3.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        mock_build_map.assert_called_once_with(dataset=mock_dataset)
+
+        expected_result = {
+            "fake-uuid2": "uuid2",
+        }
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    def test_get_orphaned_documents_returns_empty_dict_when_dataset_is_none(
+        self,
+    ):
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=None,  # type: ignore[arg-type]
+            existing_uuids=set(),
+        )
+
+        expected_result = {}
+        self.assertDictEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    def test_get_orphaned_documents_empty_when_no_documents(
+        self, mock_build_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_build_map.return_value = {}
+
+        existing_uuids = {"uuid1", "uuid2"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        expected_result = {}
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.build_ragflow_id_docname_map")
+    def test_get_orphaned_documents_all_when_not_in_db(self, mock_build_map):
+        mock_dataset = mock.Mock()
+
+        mock_build_map.return_value = {
+            "fake-uuid1": "uuid11.pdf",
+            "fake-uuid2": "uuid22.pdf",
+            "fake-uuid3": "uuid33.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid2", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        expected_result = {
+            "fake-uuid1": "uuid11",
+            "fake-uuid2": "uuid22",
+            "fake-uuid3": "uuid33",
+        }
+
+        self.assertEqual(orphaned_documents, expected_result)
+
     def test_rename_document_with_extension(self):
         mock_doc1 = mock.Mock()
         mock_doc1.name = "doc1.pdf"
