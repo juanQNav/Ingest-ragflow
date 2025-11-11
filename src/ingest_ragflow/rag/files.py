@@ -99,10 +99,13 @@ def rename_document_name(document: Document, name: str) -> bool:
 
 
 def get_orphaned_documents(
-    dataset: DataSet, existing_uuids: set[str]
+    dataset: DataSet, existing_uuids: set[str], status: Optional[str] = None
 ) -> dict[str, str]:
     """
-    Return documents that are DONE in RAGFlow but missing in database.
+    Return documents with specific status in RAGFlow
+    but missing in database.
+    If status is None, then  use all documents regardless
+    of their status.
 
     Args:
         dataset: RAGFlow dataset object.
@@ -116,7 +119,9 @@ def get_orphaned_documents(
     if dataset is None:
         return orphaned_documents_map
 
-    documents_id_name_map = generate_ragflow_id_docname_map(dataset=dataset)
+    documents_id_name_map = generate_ragflow_id_docname_map(
+        dataset=dataset, status=status
+    )
 
     for doc_id, doc_name in documents_id_name_map.items():
         doc_uuid = str(doc_name).replace(".pdf", "")

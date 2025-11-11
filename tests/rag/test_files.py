@@ -142,7 +142,9 @@ class TestRagFiles(TestCase):
             dataset=mock_dataset, existing_uuids=existing_uuids
         )
 
-        mock_generate_map.assert_called_once_with(dataset=mock_dataset)
+        mock_generate_map.assert_called_once_with(
+            dataset=mock_dataset, status=None
+        )
 
         expected_result = {}
 
@@ -166,7 +168,9 @@ class TestRagFiles(TestCase):
             dataset=mock_dataset, existing_uuids=existing_uuids
         )
 
-        mock_generate_map.assert_called_once_with(dataset=mock_dataset)
+        mock_generate_map.assert_called_once_with(
+            dataset=mock_dataset, status=None
+        )
 
         expected_result = {
             "fake-uuid2": "uuid2",
