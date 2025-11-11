@@ -97,6 +97,34 @@ def rename_document_name(document: Document, name: str) -> bool:
         return False
 
 
+def get_orphaned_documents(
+    dataset: DataSet, existing_uuids: set[str]
+) -> dict[str, str]:
+    """
+    Return documents that are DONE in RAGFlow but missing in database.
+
+    Args:
+        dataset: RAGFlow dataset object.
+        existing_uuids: set of existing respository uuids.
+
+    Returns:
+        dict: Mapping dict: Mapping of {document_id:uuid}
+    """
+
+    orphaned_documents_map = {}
+    if dataset is None:
+        return orphaned_documents_map
+
+    documents_id_name_map = build_ragflow_id_docname_map(dataset=dataset)
+
+    for doc_id, doc_name in documents_id_name_map.items():
+        doc_uuid = str(doc_name).replace(".pdf", "")
+        if doc_uuid not in existing_uuids:
+            orphaned_documents_map[doc_id] = doc_uuid
+
+    return orphaned_documents_map
+
+
 def build_ragflow_id_docname_map(dataset: DataSet) -> dict:
     """
     Generate a mapping of RAGFlow document IDs to their PDF names.
