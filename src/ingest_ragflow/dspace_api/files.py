@@ -111,44 +111,6 @@ def fetch_and_download_files(
             )
 
 
-def get_primary_pdf_bitstream(bitstreams: List[dict]) -> Optional[dict]:
-    """
-    Get the primary PDF bitstreams from a list of bitstreams.
-
-    Prioritizes:
-    1. PDFs in ORIGINAL bundle (main document)
-    2. Largest PDF file
-    3. First PDF found
-
-    Args:
-        bitstreams: List of bitstreams dictionaries.
-
-    Returns:
-        The primary PDF bitstream or None if no PDF found.
-    """
-    if not bitstreams:
-        return None
-
-    pdf_bitstreams = [
-        bs for bs in bitstreams if bs.get("name", "").lower().endswith(".pdf")
-    ]
-
-    if not pdf_bitstreams:
-        return None
-
-    # Priority 1: ORIGINAL bundle
-    original_pdfs = [
-        bs for bs in pdf_bitstreams if bs.get("bundleName") == "ORIGINAL"
-    ]
-
-    # If multiple PDFs in ORIGINAL, return the Largest
-    if original_pdfs:
-        return max(original_pdfs, key=lambda x: x.get("sizeBytes", 0))
-
-    # # Priority 2: Return the Largest PDF
-    return max(pdf_bitstreams, key=lambda x: x.get("sizeBytes", 0))
-
-
 def retrieve_item_file(
     base_url: str,
     base_url_rest: str,
@@ -173,28 +135,15 @@ def retrieve_item_file(
               (None, None) otherwise.
     """
     item_details = get_item_details(base_url_rest, item_id, proxies=proxies)
-
-    if not item_details:
-        tqdm.write(f"[WARNING] Could not get details for item {item_id}")
+    if item_details is None:
+        tqdm.write(f"[WARNING] item details for item {item_id}")
         return None, None
 
-    bitstreams = item_details.get("bitstreams", [])
-
-    if not bitstreams:
-        tqdm.write(f"[WARNING] No bitstreams found for item {item_id}")
+    bitstream = item_details.get("bitstreams", [])
+    if len(bitstream) < 1:
         return None, None
 
-    # Get the primary PDF bitstream
-    primary_bitstream = get_primary_pdf_bitstream(bitstreams)
-
-    if not primary_bitstream:
-        tqdm.write(f"[WARNING] No PDF bitstream found for item {item_id}")
-        return None, None
-
-    # Update item_details to only include the primary bitstream
-    # keep it as a list for consitency
-    item_details["bitstreams"] = [primary_bitstream]
-
+    primary_bitstream = bitstream[0]
     file_url = primary_bitstream.get("retrieveLink")
     if not file_url:
         tqdm.write(f"[WARNING] No retrieve link for PDF in item {item_id}")
@@ -227,3 +176,27 @@ def retrieve_item_file(
         )
 
     return file_path, item_details
+
+
+def get_files_from_metadata(metadata_map: dict) -> list[str]:
+    """
+    Extract file names from the metadata map of documents
+    processed in this execution.
+
+    Args:
+        metadata_map_done: Dictionary mapping
+            ragflow_document_id to item metadata.
+
+    Returns:
+        List of strings with names of pdf files.
+    """
+    file_names = []
+    for item_metadata in metadata_map.values():
+        bitstreams = item_metadata.get("bitstreams", [])
+        if bitstreams:
+            # Get the first bitstream's name (the PDF)
+            file_name = bitstreams[0].get("name")
+            if file_name:
+                file_names.append(file_name)
+
+    return file_names

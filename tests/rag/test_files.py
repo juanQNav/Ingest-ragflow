@@ -1,4 +1,8 @@
+import tempfile
+from io import StringIO
+from pathlib import Path
 from unittest import TestCase, mock
+from unittest.mock import patch
 
 from ingest_ragflow.rag import files as rf
 
@@ -44,3 +48,336 @@ class TestRagFiles(TestCase):
         self.assertEqual(result[0]["blob"], b"data1")
         self.assertEqual(result[1]["displayed_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
+
+    def test_generate_ragflow_id_docname_map_with_multiple_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "document1.pdf"
+        mock_doc1.id = "testid1"
+        mock_doc1.run = "DONE"
+        mock_doc2 = mock.Mock()
+        mock_doc2.name = "document2.pdf"
+        mock_doc2.id = "testid2"
+        mock_doc2.run = "DONE"
+        mock_doc3 = mock.Mock()
+        mock_doc3.name = "report.pdf"
+        mock_doc3.id = "testid3"
+        mock_doc3.run = "CANCEL"
+
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.generate_ragflow_id_docname_map(
+            mock_dataset, status="DONE"
+        )
+
+        assert result == {
+            "testid1": "document1.pdf",
+            "testid2": "document2.pdf",
+        }
+        self.assertEqual(len(result.items()), 2)
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_generate_ragflow_id_docname_map_with_empty_dataset(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = mock_dataset.list_documents(mock_dataset)
+
+        assert result == []
+        assert len(result) == 0
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_names_with_multiple_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "document1.pdf"
+        mock_doc1.run = "DONE"
+        mock_doc2 = mock.Mock()
+        mock_doc2.name = "document2.pdf"
+        mock_doc2.run = "DONE"
+        mock_doc3 = mock.Mock()
+        mock_doc3.name = "report.pdf"
+        mock_doc3.run = "CANCEL"
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+        ]
+
+        result = rf.get_docs_names(mock_dataset, status="DONE")
+
+        self.assertEqual(result, ["document1.pdf", "document2.pdf"])
+        self.assertEqual(len(result), 2)
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_names_with_empty_dataset(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_names(mock_dataset)
+
+        # Assert
+        assert result == []
+        assert len(result) == 0
+        mock_dataset.list_documents.assert_called_once()
+
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_with_multiple_documents_all_exist_in_db(
+        self, mock_generate_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_generate_map.return_value = {
+            "fake-uuid1": "uuid1.pdf",
+            "fake-uuid2": "uuid2.pdf",
+            "fake-uuid3": "uuid3.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid2", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        mock_generate_map.assert_called_once_with(
+            dataset=mock_dataset, status=None
+        )
+
+        expected_result = {}
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_with_partial_match(
+        self, mock_generate_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_generate_map.return_value = {
+            "fake-uuid1": "uuid1.pdf",
+            "fake-uuid2": "uuid2.pdf",
+            "fake-uuid3": "uuid3.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        mock_generate_map.assert_called_once_with(
+            dataset=mock_dataset, status=None
+        )
+
+        expected_result = {
+            "fake-uuid2": "uuid2",
+        }
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    def test_get_orphaned_documents_returns_empty_dict_when_dataset_is_none(
+        self,
+    ):
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=None,  # type: ignore[arg-type]
+            existing_uuids=set(),
+        )
+
+        expected_result = {}
+        self.assertDictEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_empty_when_no_documents(
+        self, mock_generate_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_generate_map.return_value = {}
+
+        existing_uuids = {"uuid1", "uuid2"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        expected_result = {}
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
+    def test_get_orphaned_documents_all_when_not_in_db(
+        self, mock_generate_map
+    ):
+        mock_dataset = mock.Mock()
+
+        mock_generate_map.return_value = {
+            "fake-uuid1": "uuid11.pdf",
+            "fake-uuid2": "uuid22.pdf",
+            "fake-uuid3": "uuid33.pdf",
+        }
+
+        existing_uuids = {"uuid1", "uuid2", "uuid3"}
+
+        orphaned_documents = rf.get_orphaned_documents(
+            dataset=mock_dataset, existing_uuids=existing_uuids
+        )
+
+        expected_result = {
+            "fake-uuid1": "uuid11",
+            "fake-uuid2": "uuid22",
+            "fake-uuid3": "uuid33",
+        }
+
+        self.assertEqual(orphaned_documents, expected_result)
+
+    def test_rename_document_with_extension(self):
+        mock_doc1 = mock.Mock()
+        mock_doc1.name = "doc1.pdf"
+        mock_doc1.update = mock.Mock(return_value=None)
+        name = "fake-uuid"
+
+        def update_sied_effect(data):
+            mock_doc1.name = data["name"]
+
+        mock_doc1.update.side_effect = update_sied_effect
+
+        result = rf.rename_document_name(mock_doc1, name)
+
+        self.assertTrue(result)
+        self.assertEqual(mock_doc1.name, f"{name}.pdf")
+        mock_doc1.update.assert_called_once_with({"name": f"{name}.pdf"})
+
+
+class TestRemoveFiles(TestCase):
+    def test_remove_single_existing_file(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            # Create a test PDF file
+            test_file = Path(tmp_path) / "test.pdf"
+            test_file.write_text("dummy pdf content")
+
+            self.assertTrue(test_file.exists())
+            result = rf.remove_temp_pdf(tmp_path, ["test.pdf"])
+
+            self.assertTrue(result)
+            self.assertFalse(test_file.exists())
+
+    def test_remove_multiple_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            # Create multiple test files
+            files = ["file1.pdf", "file2.pdf", "file3.pdf"]
+            for filename in files:
+                (Path(tmp_path) / filename).write_text("content")
+
+            result = rf.remove_temp_pdf(tmp_path, files)
+
+            self.assertTrue(result)
+            for filename in files:
+                self.assertFalse((Path(tmp_path) / filename).exists())
+
+    def test_file_does_not_exist(self):
+        with tempfile.TemporaryDirectory() as tmp_path:
+            with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                result = rf.remove_temp_pdf(tmp_path, ["nonexistent.pdf"])
+
+                captured = mock_stdout.getvalue()
+                self.assertTrue(result)
+                self.assertIn("does not exists", captured)
+                self.assertIn("skipping", captured)
+
+    def test_get_docs_ids_with_no_status_filter_returns_all_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="UNSTART")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 3)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-3", result)
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_ids_with_single_status_filter_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 2)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-3", result)
+        self.assertNotIn("doc-id-2", result)
+
+    def test_get_docs_ids_with_multiple_statuses_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_doc4 = mock.Mock(id="doc-id-4", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+            mock_doc4,
+        ]
+
+        result = rf.get_docs_ids(
+            dataset=mock_dataset, statuses=["DONE", "FAIL"]
+        )
+
+        # Note: Due to implementation, duplicates might occur
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-4", result)
+        self.assertNotIn("doc-id-3", result)
+
+    def test_get_docs_ids_with_no_matching_status_returns_empty_list(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["CANCEL"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+
+    def test_get_docs_ids_with_empty_dataset_returns_empty_list(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+
+    def test_get_docs_ids_with_empty_dataset_and_no_status_returns_empty_list(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])

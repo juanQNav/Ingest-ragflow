@@ -191,6 +191,44 @@ def get_item_metadata(
         return None
 
 
+def get_primary_pdf_bitstream(bitstreams: List[dict]) -> Optional[dict]:
+    """
+    Get the primary PDF bitstreams from a list of bitstreams.
+
+    Prioritizes:
+    1. PDFs in ORIGINAL bundle (main document)
+    2. Largest PDF file
+    3. First PDF found
+
+    Args:
+        bitstreams: List of bitstreams dictionaries.
+
+    Returns:
+        The primary PDF bitstream or None if no PDF found.
+    """
+    if not bitstreams:
+        return None
+
+    pdf_bitstreams = [
+        bs for bs in bitstreams if bs.get("name", "").lower().endswith(".pdf")
+    ]
+
+    if not pdf_bitstreams:
+        return None
+
+    # Priority 1: ORIGINAL bundle
+    original_pdfs = [
+        bs for bs in pdf_bitstreams if bs.get("bundleName") == "ORIGINAL"
+    ]
+
+    # If multiple PDFs in ORIGINAL, return the Largest
+    if original_pdfs:
+        return max(original_pdfs, key=lambda x: x.get("sizeBytes", 0))
+
+    # # Priority 2: Return the Largest PDF
+    return max(pdf_bitstreams, key=lambda x: x.get("sizeBytes", 0))
+
+
 def get_item_details(
     base_url_rest: str, item_id: str, proxies: Optional[dict] = None
 ) -> Optional[dict]:
@@ -230,6 +268,24 @@ def get_item_details(
                 "metadata": metadata or {},
                 "bitstreams": item_data.get("bitstreams", []),
             }
+
+            bitstreams = item_details.get("bitstreams", [])
+
+            if not bitstreams:
+                tqdm.write(f"[WARNING] No bitstreams found for item {item_id}")
+                return None
+            # Get the primary PDF bitstreams
+            primary_bitstream = get_primary_pdf_bitstream(bitstreams)
+
+            if not primary_bitstream:
+                tqdm.write(
+                    f"[WARNING] No PDF bitstream found for item {item_id}"
+                )
+                return None
+
+            # Update item_details to only include the primary bitstream
+            # keep it as a list for consitency
+            item_details["bitstreams"] = [primary_bitstream]
 
             return item_details
         else:

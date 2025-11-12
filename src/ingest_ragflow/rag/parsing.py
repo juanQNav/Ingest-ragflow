@@ -13,7 +13,10 @@ from tqdm import tqdm
 from ingest_ragflow.dspace_api.collections import get_items_from_collection
 from ingest_ragflow.dspace_api.files import retrieve_item_file
 from ingest_ragflow.dspace_api.items import get_items, get_items_ids
-from ingest_ragflow.rag.files import generate_document_list
+from ingest_ragflow.rag.files import (
+    generate_document_list,
+    rename_document_name,
+)
 
 
 def upload_and_parse_file(
@@ -94,7 +97,9 @@ def process_item(
 
         with lock:
             ragflow_dataset.upload_documents(document)
-            documents_id = ragflow_dataset.list_documents()[0].id
+            document_rg = ragflow_dataset.list_documents()[0]
+            documents_id = document_rg.id
+            rename_document_name(document=document_rg, name=item_id)
             documents_ids.append(documents_id)
 
         try:
@@ -435,3 +440,35 @@ async def monitor_parsing(
         tqdm.write("[INFO] Monitoring recovered from network errors.")
 
     tqdm.write("Parsing monitoring completed.")
+
+
+def filter_done_documents(dataset: DataSet, metadata_map: dict) -> dict:
+    """
+    Filter metadata_map to only include documents
+    with DONE status in RAGFlow.
+
+    Args:
+        dataset: RagFlow DataSet object.
+        metadata_map: Dictionary mapping
+            ragflow_document_id to item metadata.
+
+    Returns:
+        Dictionary with ragflow_id of documents with
+        DONE status in RAGFlow.
+    """
+    try:
+        documents = dataset.list_documents()
+        done_document_ids = {
+            doc.id for doc in documents if getattr(doc, "run", None) == "DONE"
+        }
+
+        filtered_map = {
+            ragflow_id: metadata
+            for ragflow_id, metadata in metadata_map.items()
+            if ragflow_id in done_document_ids
+        }
+
+        return filtered_map
+    except Exception as e:
+        print(f"Error filtering DONE documents: {e}")
+        return metadata_map
