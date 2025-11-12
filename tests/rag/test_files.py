@@ -352,7 +352,6 @@ class TestRemoveFiles(TestCase):
         self.assertNotIn("doc-id-3", result)
 
     def test_get_docs_ids_with_no_matching_status_returns_empty_list(self):
-        """Test that when no documents match the status, an empty list is returned."""
         mock_dataset = mock.Mock()
         mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
         mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
