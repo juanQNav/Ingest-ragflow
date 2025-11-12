@@ -1,6 +1,6 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import List, Optional
 
 from ragflow_sdk import DataSet, Document
 
@@ -186,6 +186,38 @@ def get_docs_names(
     return documents_names
 
 
+def get_docs_ids(
+    dataset: DataSet, statuses: Optional[List[str]] = None
+) -> list[str]:
+    """
+    Extract all documents id from a RAGFlow dataset with specific status.
+
+    Args:
+        dataset: RAGFlow dataset object.
+        statuses: list of status.
+
+    Returns:
+        list[str]: A list of document ids, from dataset.
+        Returns an empty list if the dataset contains no documents with
+        this status.
+    """
+    document_ids = []
+
+    document_list = dataset.list_documents()
+    if statuses is not None:
+        for status in statuses:
+            for document in document_list:
+                document_status = str(getattr(document, "run", None))
+                if document_status == status:
+                    document_ids.append(document.id)
+    else:
+        # When no status filter is provided, return all document IDs
+        for document in document_list:
+            document_ids.append(document.id)
+
+    return document_ids
+
+
 def remove_temp_pdf(folder_path: str, processed_file_names: list[str]) -> bool:
     """
     Remove temporal pdf files after the parser has processed it.
@@ -195,7 +227,6 @@ def remove_temp_pdf(folder_path: str, processed_file_names: list[str]) -> bool:
         processed_file_names: file names list of the files with DONE
             status in RAGFlow.
 
-    Returns:
         bool: True if the folder exists and the removal process was
             attempted (regardless of individual file success/failure),
             False if the folder path does not exist or is not a directory.

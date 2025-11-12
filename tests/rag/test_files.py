@@ -286,3 +286,99 @@ class TestRemoveFiles(TestCase):
                 self.assertTrue(result)
                 self.assertIn("does not exists", captured)
                 self.assertIn("skipping", captured)
+
+    def test_get_docs_ids_with_no_status_filter_returns_all_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="UNSTART")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 3)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-3", result)
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_get_docs_ids_with_single_status_filter_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 2)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-3", result)
+        self.assertNotIn("doc-id-2", result)
+
+    def test_get_docs_ids_with_multiple_statuses_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_doc4 = mock.Mock(id="doc-id-4", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+            mock_doc4,
+        ]
+
+        result = rf.get_docs_ids(
+            dataset=mock_dataset, statuses=["DONE", "FAIL"]
+        )
+
+        # Note: Due to implementation, duplicates might occur
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-4", result)
+        self.assertNotIn("doc-id-3", result)
+
+    def test_get_docs_ids_with_no_matching_status_returns_empty_list(self):
+        """Test that when no documents match the status, an empty list is returned."""
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["CANCEL"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+
+    def test_get_docs_ids_with_empty_dataset_returns_empty_list(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+
+    def test_get_docs_ids_with_empty_dataset_and_no_status_returns_empty_list(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
