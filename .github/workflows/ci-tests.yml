@@ -29,11 +29,17 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-cov flake8 ruff coverage
+          pip install pytest pytest-cov flake8 ruff coverage coveralls
 
       - name: Run tests with coverage
         run: |
           pytest --cov=src/ingest_ragflow --cov-report=xml --cov-report=term-missing tests/
+
+      - name: Upload coverage to Coveralls
+        run: |
+          coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint with flake8
         run: |
