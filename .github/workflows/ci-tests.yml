@@ -35,10 +35,8 @@ jobs:
         run: |
           pytest --cov=src/ingest_ragflow --cov-report=xml --cov-report=term-missing tests/
 
-      - name: Coveralls GitHub Action
-        uses: coverallsapp/github-action@v2.3.6
-        with:
-          github-token: ${{ github.token }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
 
       - name: Lint with flake8
         run: |
