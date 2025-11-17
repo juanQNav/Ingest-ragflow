@@ -81,8 +81,10 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result.items()), 2)
 
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -95,8 +97,10 @@ class TestRagFiles(TestCase):
         assert result == {}
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -123,8 +127,10 @@ class TestRagFiles(TestCase):
         self.assertEqual(result, ["document1.pdf", "document2.pdf"])
         self.assertEqual(len(result), 2)
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -137,8 +143,10 @@ class TestRagFiles(TestCase):
         assert result == []
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -286,8 +294,10 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-2", result)
         self.assertIn("doc-id-3", result)
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -311,8 +321,10 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-3", result)
         self.assertNotIn("doc-id-2", result)
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -340,8 +352,10 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-4", result)
         self.assertNotIn("doc-id-3", result)
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -356,8 +370,10 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -370,8 +386,10 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -386,8 +404,10 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
             desc=True,
         )
 
@@ -400,12 +420,14 @@ class TestRagFiles(TestCase):
         mock_docs = [{"id": 1}, {"id": 2}, {"id": 3}]
         mock_dataset.list_documents.return_value = mock_docs
 
-        result = rf.get_all_documents(mock_dataset, limit=100)
+        result = rf.get_all_documents(mock_dataset, page_size=10)
 
         self.assertEqual(result, mock_docs)
         mock_dataset.list_documents.assert_called_once_with(
-            offset=1,
-            limit=100,
+            keywords=None,
+            page=1,
+            page_size=10,
+            orderby="create_time",
             desc=True,
         )
 
@@ -414,18 +436,38 @@ class TestRagFiles(TestCase):
         page1_docs = [{"id": i} for i in range(1, 11)]  # 10 docs
         page2_docs = [{"id": i} for i in range(11, 21)]  # 10 docs
         page3_docs = [{"id": i} for i in range(21, 26)]  # 5 docs (last page)
-
         mock_dataset.list_documents.side_effect = [
             page1_docs,
             page2_docs,
             page3_docs,
         ]
 
-        result = rf.get_all_documents(mock_dataset, limit=10)
+        result = rf.get_all_documents(mock_dataset, page_size=10)
 
-        self.assertEqual(len(result), 25)
-        self.assertEqual(result, page1_docs + page2_docs + page3_docs)
+        expected_docs = page1_docs + page2_docs + page3_docs
+        self.assertEqual(result, expected_docs)
         self.assertEqual(mock_dataset.list_documents.call_count, 3)
+        mock_dataset.list_documents.assert_any_call(
+            keywords=None,
+            page=1,
+            page_size=10,
+            orderby="create_time",
+            desc=True,
+        )
+        mock_dataset.list_documents.assert_any_call(
+            keywords=None,
+            page=2,
+            page_size=10,
+            orderby="create_time",
+            desc=True,
+        )
+        mock_dataset.list_documents.assert_any_call(
+            keywords=None,
+            page=3,
+            page_size=10,
+            orderby="create_time",
+            desc=True,
+        )
 
     def test_stops_when_empty_page_received(self):
         mock_dataset = mock.Mock()
@@ -442,13 +484,27 @@ class TestRagFiles(TestCase):
         page2_docs = [
             {"id": i} for i in range(101, 151)
         ]  # 50 docs (partial page)
-
         mock_dataset.list_documents.side_effect = [page1_docs, page2_docs]
 
-        result = rf.get_all_documents(mock_dataset, limit=100)
+        result = rf.get_all_documents(mock_dataset, page_size=100)
 
-        self.assertEqual(len(result), 150)
+        expected_docs = page1_docs + page2_docs
+        self.assertEqual(result, expected_docs)
         self.assertEqual(mock_dataset.list_documents.call_count, 2)
+        mock_dataset.list_documents.assert_any_call(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+        mock_dataset.list_documents.assert_any_call(
+            keywords=None,
+            page=2,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
 
     def test_handles_exception_gracefully(self):
         mock_dataset = mock.Mock()
