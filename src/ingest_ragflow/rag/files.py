@@ -75,6 +75,71 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
         ]
 
 
+def get_all_documents(
+    dataset: DataSet,
+    keywords: Optional[str] = None,
+    orderby: str = "create_time",
+    desc: bool = True,
+    page_size: int = 100,
+    verbose: bool = False,
+) -> list[Document]:
+    """
+    Get all documents from a dataset handling pagination automatically.
+
+    Args:
+        dataset: RAGFlow dataset object
+        keywords: Keywords to filter documents by title
+        order_by: Field to sort by ("create_time" or "update_time")
+        desc: Sort in descending order
+        page_size: Number of documents per page (default: 100)
+        verbose: Print pagination progress
+
+    Returns:
+        list: All documents matching the criteria
+    """
+    if dataset is None:
+        return []
+
+    all_documents: list[Document] = []
+    page = 1
+
+    while True:
+        try:
+            documents = dataset.list_documents(
+                keywords=keywords,
+                page=page,
+                page_size=page_size,
+                orderby=orderby,
+                desc=desc,
+            )
+
+            if not documents:
+                break
+
+            all_documents.extend(documents)
+
+            if verbose:
+                print(
+                    f"Fetched page {page}: {len(documents)} documents "
+                    f"(Total: {len(all_documents)})"
+                )
+
+            if len(documents) < page_size:
+                break
+
+            page += 1
+
+        except Exception as e:
+            if verbose:
+                print(f"Error fetching page {page}: {e}")
+            break
+
+    if verbose:
+        print(f"Total documents retrieved: {len(all_documents)}")
+
+    return all_documents
+
+
 def rename_document_name(document: Document, name: str) -> bool:
     """
     Rename document name.
@@ -110,6 +175,7 @@ def get_orphaned_documents(
     Args:
         dataset: RAGFlow dataset object.
         existing_uuids: set of existing respository uuids.
+        status: Filter by document status (e.g., "DONE"). None for all documents.
 
     Returns:
         dict: Mapping dict: Mapping of {document_id:uuid}
@@ -141,6 +207,7 @@ def generate_ragflow_id_docname_map(
 
     Args:
         dataset: RAGFlow dataset object
+        status: Filter by document status (e.g., "DONE"). None for all documents.
 
     Returns:
         dict: Mapping of {document_id: document_name}
@@ -150,7 +217,8 @@ def generate_ragflow_id_docname_map(
     if dataset is None:
         return document_id_to_name
 
-    for document in dataset.list_documents():
+    documents = get_all_documents(dataset=dataset)
+    for document in documents:
         document_status = str(getattr(document, "run", None))
         if document_status == status or status is None:
             document_id_to_name[document.id] = document.name
@@ -171,6 +239,7 @@ def get_docs_names(
 
     Args:
         dataset: RAGFlow DataSet object containing documents to list
+        status: Filter by document status (e.g., "DONE"). None for all documents.
 
     Returns:
         list[str]: A list of document names (typically PDF filenames)
@@ -178,7 +247,8 @@ def get_docs_names(
         Returns an empty list if the dataset contains no documents.
     """
     documents_names = []
-    for document in dataset.list_documents():
+    documents = get_all_documents(dataset=dataset)
+    for document in documents:
         document_status = str(getattr(document, "run", None))
         if document_status == status or status is None:
             documents_names.append(document.name)
@@ -203,7 +273,7 @@ def get_docs_ids(
     """
     document_ids = []
 
-    document_list = dataset.list_documents()
+    document_list = get_all_documents(dataset=dataset)
     if statuses is not None:
         for status in statuses:
             for document in document_list:
