@@ -485,6 +485,18 @@ class TestRagFiles(TestCase):
         self.assertEqual(result, page1_docs)
         self.assertEqual(mock_dataset.list_documents.call_count, 1)
 
+    @patch("builtins.print")
+    def test_verbose_mode_prints_error(self, mock_print):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.side_effect = Exception("API error")
+
+        rf.get_all_documents(mock_dataset, verbose=True)
+
+        assert any(
+            "Error fetching page 1: API error" in str(call)
+            for call in mock_print.call_args_list
+        )
+
 
 class TestRemoveFiles(TestCase):
     def test_remove_single_existing_file(self):
