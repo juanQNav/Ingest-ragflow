@@ -79,17 +79,30 @@ class TestRagFiles(TestCase):
             "testid2": "document2.pdf",
         }
         self.assertEqual(len(result.items()), 2)
-        mock_dataset.list_documents.assert_called_once()
+
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
 
     def test_generate_ragflow_id_docname_map_with_empty_dataset(self):
         mock_dataset = mock.Mock()
         mock_dataset.list_documents.return_value = []
 
-        result = mock_dataset.list_documents(mock_dataset)
+        result = rf.generate_ragflow_id_docname_map(mock_dataset)
 
-        assert result == []
+        assert result == {}
         assert len(result) == 0
-        mock_dataset.list_documents.assert_called_once()
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
 
     def test_get_docs_names_with_multiple_documents(self):
         mock_dataset = mock.Mock()
@@ -102,16 +115,24 @@ class TestRagFiles(TestCase):
         mock_doc3 = mock.Mock()
         mock_doc3.name = "report.pdf"
         mock_doc3.run = "CANCEL"
+
         mock_dataset.list_documents.return_value = [
             mock_doc1,
             mock_doc2,
+            mock_doc3,
         ]
 
         result = rf.get_docs_names(mock_dataset, status="DONE")
 
         self.assertEqual(result, ["document1.pdf", "document2.pdf"])
         self.assertEqual(len(result), 2)
-        mock_dataset.list_documents.assert_called_once()
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
 
     def test_get_docs_names_with_empty_dataset(self):
         mock_dataset = mock.Mock()
@@ -119,10 +140,15 @@ class TestRagFiles(TestCase):
 
         result = rf.get_docs_names(mock_dataset)
 
-        # Assert
         assert result == []
         assert len(result) == 0
-        mock_dataset.list_documents.assert_called_once()
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
 
     @mock.patch("ingest_ragflow.rag.files.generate_ragflow_id_docname_map")
     def test_get_orphaned_documents_with_multiple_documents_all_exist_in_db(
@@ -250,6 +276,227 @@ class TestRagFiles(TestCase):
         self.assertEqual(mock_doc1.name, f"{name}.pdf")
         mock_doc1.update.assert_called_once_with({"name": f"{name}.pdf"})
 
+    def test_get_docs_ids_with_no_status_filter_returns_all_documents(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="UNSTART")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 3)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-3", result)
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_get_docs_ids_with_single_status_filter_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+        ]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 2)
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-3", result)
+        self.assertNotIn("doc-id-2", result)
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_get_docs_ids_with_multiple_statuses_returns_matching_documents(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
+        mock_doc4 = mock.Mock(id="doc-id-4", run="DONE")
+        mock_dataset.list_documents.return_value = [
+            mock_doc1,
+            mock_doc2,
+            mock_doc3,
+            mock_doc4,
+        ]
+
+        result = rf.get_docs_ids(
+            dataset=mock_dataset, statuses=["DONE", "FAIL"]
+        )
+
+        self.assertIn("doc-id-1", result)
+        self.assertIn("doc-id-2", result)
+        self.assertIn("doc-id-4", result)
+        self.assertNotIn("doc-id-3", result)
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_get_docs_ids_with_no_matching_status_returns_empty_list(self):
+        mock_dataset = mock.Mock()
+        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
+        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
+        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["CANCEL"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_get_docs_ids_with_empty_dataset_returns_empty_list(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_get_docs_ids_with_empty_dataset_and_no_status_returns_empty_list(
+        self,
+    ):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
+
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_returns_empty_list_when_dataset_is_none(self):
+        result = rf.get_all_documents(dataset=None)  # type: ignore[arg-type]
+        self.assertEqual(result, [])
+
+    def test_single_page_retrieval(self):
+        mock_dataset = mock.Mock()
+        mock_docs = [{"id": 1}, {"id": 2}, {"id": 3}]
+        mock_dataset.list_documents.return_value = mock_docs
+
+        result = rf.get_all_documents(mock_dataset, page_size=100)
+
+        self.assertEqual(result, mock_docs)
+        mock_dataset.list_documents.assert_called_once_with(
+            keywords=None,
+            page=1,
+            page_size=100,
+            orderby="create_time",
+            desc=True,
+        )
+
+    def test_multiple_page_retrieval(self):
+        mock_dataset = mock.Mock()
+        page1_docs = [{"id": i} for i in range(1, 11)]  # 10 docs
+        page2_docs = [{"id": i} for i in range(11, 21)]  # 10 docs
+        page3_docs = [{"id": i} for i in range(21, 26)]  # 5 docs (last page)
+
+        mock_dataset.list_documents.side_effect = [
+            page1_docs,
+            page2_docs,
+            page3_docs,
+        ]
+
+        result = rf.get_all_documents(mock_dataset, page_size=10)
+
+        self.assertEqual(len(result), 25)
+        self.assertEqual(result, page1_docs + page2_docs + page3_docs)
+        self.assertEqual(mock_dataset.list_documents.call_count, 3)
+
+    def test_stops_when_empty_page_received(self):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.return_value = []
+
+        result = rf.get_all_documents(mock_dataset)
+
+        self.assertEqual(result, [])
+        mock_dataset.list_documents.assert_called_once()
+
+    def test_stops_when_partial_page_received(self):
+        mock_dataset = mock.Mock()
+        page1_docs = [{"id": i} for i in range(1, 101)]  # 100 docs (full page)
+        page2_docs = [
+            {"id": i} for i in range(101, 151)
+        ]  # 50 docs (partial page)
+
+        mock_dataset.list_documents.side_effect = [page1_docs, page2_docs]
+
+        result = rf.get_all_documents(mock_dataset, page_size=100)
+
+        self.assertEqual(len(result), 150)
+        self.assertEqual(mock_dataset.list_documents.call_count, 2)
+
+    def test_handles_exception_gracefully(self):
+        mock_dataset = mock.Mock()
+        page1_docs = [{"id": 1}, {"id": 2}]
+        mock_dataset.list_documents.side_effect = [
+            page1_docs,
+            Exception("Connection error"),
+        ]
+
+        result = rf.get_all_documents(mock_dataset, verbose=False)
+
+        self.assertEqual(result, page1_docs)
+        self.assertEqual(mock_dataset.list_documents.call_count, 1)
+
+    @patch("builtins.print")
+    def test_verbose_mode_prints_error(self, mock_print):
+        mock_dataset = mock.Mock()
+        mock_dataset.list_documents.side_effect = Exception("API error")
+
+        rf.get_all_documents(mock_dataset, verbose=True)
+
+        assert any(
+            "Error fetching page 1: API error" in str(call)
+            for call in mock_print.call_args_list
+        )
+
 
 class TestRemoveFiles(TestCase):
     def test_remove_single_existing_file(self):
@@ -286,98 +533,3 @@ class TestRemoveFiles(TestCase):
                 self.assertTrue(result)
                 self.assertIn("does not exists", captured)
                 self.assertIn("skipping", captured)
-
-    def test_get_docs_ids_with_no_status_filter_returns_all_documents(self):
-        mock_dataset = mock.Mock()
-        mock_doc1 = mock.Mock(id="doc-id-1", run="UNSTART")
-        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
-        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
-        mock_dataset.list_documents.return_value = [
-            mock_doc1,
-            mock_doc2,
-            mock_doc3,
-        ]
-
-        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
-
-        self.assertEqual(len(result), 3)
-        self.assertIn("doc-id-1", result)
-        self.assertIn("doc-id-2", result)
-        self.assertIn("doc-id-3", result)
-        mock_dataset.list_documents.assert_called_once()
-
-    def test_get_docs_ids_with_single_status_filter_returns_matching_documents(
-        self,
-    ):
-        mock_dataset = mock.Mock()
-        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
-        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
-        mock_doc3 = mock.Mock(id="doc-id-3", run="DONE")
-        mock_dataset.list_documents.return_value = [
-            mock_doc1,
-            mock_doc2,
-            mock_doc3,
-        ]
-
-        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
-
-        self.assertEqual(len(result), 2)
-        self.assertIn("doc-id-1", result)
-        self.assertIn("doc-id-3", result)
-        self.assertNotIn("doc-id-2", result)
-
-    def test_get_docs_ids_with_multiple_statuses_returns_matching_documents(
-        self,
-    ):
-        mock_dataset = mock.Mock()
-        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
-        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
-        mock_doc3 = mock.Mock(id="doc-id-3", run="RUNNING")
-        mock_doc4 = mock.Mock(id="doc-id-4", run="DONE")
-        mock_dataset.list_documents.return_value = [
-            mock_doc1,
-            mock_doc2,
-            mock_doc3,
-            mock_doc4,
-        ]
-
-        result = rf.get_docs_ids(
-            dataset=mock_dataset, statuses=["DONE", "FAIL"]
-        )
-
-        # Note: Due to implementation, duplicates might occur
-        self.assertIn("doc-id-1", result)
-        self.assertIn("doc-id-2", result)
-        self.assertIn("doc-id-4", result)
-        self.assertNotIn("doc-id-3", result)
-
-    def test_get_docs_ids_with_no_matching_status_returns_empty_list(self):
-        mock_dataset = mock.Mock()
-        mock_doc1 = mock.Mock(id="doc-id-1", run="DONE")
-        mock_doc2 = mock.Mock(id="doc-id-2", run="FAIL")
-        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
-
-        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["CANCEL"])
-
-        self.assertEqual(len(result), 0)
-        self.assertEqual(result, [])
-
-    def test_get_docs_ids_with_empty_dataset_returns_empty_list(self):
-        mock_dataset = mock.Mock()
-        mock_dataset.list_documents.return_value = []
-
-        result = rf.get_docs_ids(dataset=mock_dataset, statuses=["DONE"])
-
-        self.assertEqual(len(result), 0)
-        self.assertEqual(result, [])
-
-    def test_get_docs_ids_with_empty_dataset_and_no_status_returns_empty_list(
-        self,
-    ):
-        mock_dataset = mock.Mock()
-        mock_dataset.list_documents.return_value = []
-
-        result = rf.get_docs_ids(dataset=mock_dataset, statuses=None)
-
-        self.assertEqual(len(result), 0)
-        self.assertEqual(result, [])
