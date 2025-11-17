@@ -13,7 +13,7 @@ setup(
         "requests[socks]",
         "tqdm",
         "pandas",
-        "ragflow-sdk",
+        "ragflow-sdk==0.22.0",
     ],
     python_requires=">=3.10",
     extras_require={
