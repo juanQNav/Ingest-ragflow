@@ -78,7 +78,7 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
 def get_all_documents(
     dataset: DataSet,
     desc: bool = True,
-    page_size: int = 100,
+    limit: int = 100,
     verbose: bool = False,
 ) -> list[Document]:
     """
@@ -87,7 +87,7 @@ def get_all_documents(
     Args:
         dataset: RAGFlow dataset object
         desc: Sort in descending order
-        page_size: Number of documents per page (default: 100)
+        limit: Number of documents per request (default: 100, máximo: 1024)
         verbose: Print pagination progress
 
     Returns:
@@ -97,13 +97,13 @@ def get_all_documents(
         return []
 
     all_documents: list[Document] = []
-    page = 1
+    offset = 1
 
     while True:
         try:
             documents = dataset.list_documents(
-                page=page,
-                page_size=page_size,
+                offset=offset,
+                limit=limit,
                 desc=desc,
             )
 
@@ -114,18 +114,18 @@ def get_all_documents(
 
             if verbose:
                 print(
-                    f"Fetched page {page}: {len(documents)} documents "
+                    f"Fetched offset {offset}: {len(documents)} documents "
                     f"(Total: {len(all_documents)})"
                 )
 
-            if len(documents) < page_size:
+            if len(documents) < limit:
                 break
 
-            page += 1
+            offset += limit
 
         except Exception as e:
             if verbose:
-                print(f"Error fetching page {page}: {e}")
+                print(f"Error fetching offset {offset}: {e}")
             break
 
     if verbose:
