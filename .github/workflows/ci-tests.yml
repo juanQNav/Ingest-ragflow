@@ -35,6 +35,11 @@ jobs:
         run: |
           pytest --cov=src/ingest_ragflow --cov-report=xml --cov-report=term-missing tests/
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Lint with flake8
         run: |
           flake8
