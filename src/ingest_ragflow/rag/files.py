@@ -77,8 +77,6 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
 
 def get_all_documents(
     dataset: DataSet,
-    keywords: Optional[str] = None,
-    orderby: str = "create_time",
     desc: bool = True,
     page_size: int = 100,
     verbose: bool = False,
@@ -88,8 +86,6 @@ def get_all_documents(
 
     Args:
         dataset: RAGFlow dataset object
-        keywords: Keywords to filter documents by title
-        order_by: Field to sort by ("create_time" or "update_time")
         desc: Sort in descending order
         page_size: Number of documents per page (default: 100)
         verbose: Print pagination progress
@@ -106,10 +102,8 @@ def get_all_documents(
     while True:
         try:
             documents = dataset.list_documents(
-                keywords=keywords,
                 page=page,
                 page_size=page_size,
-                orderby=orderby,
                 desc=desc,
             )
 

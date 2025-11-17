@@ -81,10 +81,8 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result.items()), 2)
 
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -97,10 +95,8 @@ class TestRagFiles(TestCase):
         assert result == {}
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -127,10 +123,8 @@ class TestRagFiles(TestCase):
         self.assertEqual(result, ["document1.pdf", "document2.pdf"])
         self.assertEqual(len(result), 2)
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -143,10 +137,8 @@ class TestRagFiles(TestCase):
         assert result == []
         assert len(result) == 0
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -294,10 +286,8 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-2", result)
         self.assertIn("doc-id-3", result)
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -321,10 +311,8 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-3", result)
         self.assertNotIn("doc-id-2", result)
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -352,10 +340,8 @@ class TestRagFiles(TestCase):
         self.assertIn("doc-id-4", result)
         self.assertNotIn("doc-id-3", result)
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -370,10 +356,8 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -386,10 +370,8 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -404,10 +386,8 @@ class TestRagFiles(TestCase):
         self.assertEqual(len(result), 0)
         self.assertEqual(result, [])
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
@@ -424,10 +404,8 @@ class TestRagFiles(TestCase):
 
         self.assertEqual(result, mock_docs)
         mock_dataset.list_documents.assert_called_once_with(
-            keywords=None,
             page=1,
             page_size=100,
-            orderby="create_time",
             desc=True,
         )
 
