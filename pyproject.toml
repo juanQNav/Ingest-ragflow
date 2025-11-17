@@ -13,7 +13,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.3.1",
-    "ragflow-sdk",
+    "ragflow-sdk==0.22.0",
     "requests[socks]>=2.32.5",
     "tqdm>=4.67.1",
 ]
