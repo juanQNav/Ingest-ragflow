@@ -1,5 +1,7 @@
 # Ingest-ragflow
 
+[![codecov](https://codecov.io/gh/juanQNav/Ingest-Ragflow/branch/main/graph/badge.svg)](https://codecov.io/gh/juanQNav/Ingest-Ragflow)
+
 This repository contains code for integrating and using various components,
 including the DSpace API and a knowledge base of RagFlow. The structure is
 organized as
@@ -9,13 +11,13 @@ follows:
 src/
 ├── ingest_ragflow/
 ├── dspace_api/
-│ ├── __init__.py
+│ ├── **init**.py
 │ ├── README.md
 │ ├── authentication.py
 │ ├── collections.py
 │ ├── files.py
 ├── rag/
-│ ├── __init__.py
+│ ├── **init**.py
 │ ├── README.md
 │ ├── files.py
 │ ├── parsing.py
