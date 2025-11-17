@@ -175,7 +175,8 @@ def get_orphaned_documents(
     Args:
         dataset: RAGFlow dataset object.
         existing_uuids: set of existing respository uuids.
-        status: Filter by document status (e.g., "DONE"). None for all documents.
+        status: Filter by document status (e.g., "DONE").
+            None for all documents.
 
     Returns:
         dict: Mapping dict: Mapping of {document_id:uuid}
@@ -207,7 +208,8 @@ def generate_ragflow_id_docname_map(
 
     Args:
         dataset: RAGFlow dataset object
-        status: Filter by document status (e.g., "DONE"). None for all documents.
+        status: Filter by document status (e.g., "DONE").
+            None for all documents.
 
     Returns:
         dict: Mapping of {document_id: document_name}
@@ -239,7 +241,8 @@ def get_docs_names(
 
     Args:
         dataset: RAGFlow DataSet object containing documents to list
-        status: Filter by document status (e.g., "DONE"). None for all documents.
+        status: Filter by document status (e.g., "DONE").
+            None for all documents.
 
     Returns:
         list[str]: A list of document names (typically PDF filenames)
