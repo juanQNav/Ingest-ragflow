@@ -8,8 +8,11 @@ from ingest_ragflow.rag.reporting import display_final_summary
 
 
 class TestDisplayFinalSummary(unittest.TestCase):
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_success(self, mock_stdout):
+    def test_display_summary_success(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
         mock_doc1 = Mock()
         mock_doc1.id = "doc-1"
@@ -23,13 +26,13 @@ class TestDisplayFinalSummary(unittest.TestCase):
         mock_doc2.run = "Completed"
         mock_doc2.chunk_count = 25
 
-        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
+        mock_get_all_documents.return_value = [mock_doc1, mock_doc2]
         metadata_map = {"doc-1": {}, "doc-2": {}}
 
         result = display_final_summary(mock_dataset, metadata_map)
 
         self.assertTrue(result)
-        mock_dataset.list_documents.assert_called_once()
+        mock_get_all_documents.assert_called_once_with(dataset=mock_dataset)
 
         output = mock_stdout.getvalue()
         self.assertIn("Final Summary:", output)
@@ -42,8 +45,11 @@ class TestDisplayFinalSummary(unittest.TestCase):
         self.assertIn("Process completed successfully", output)
         self.assertEqual(output.count("-" * 50), 2)
 
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_filters_documents(self, mock_stdout):
+    def test_display_summary_filters_documents(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
         mock_doc1 = Mock()
         mock_doc1.id = "doc-1"
@@ -57,7 +63,7 @@ class TestDisplayFinalSummary(unittest.TestCase):
         mock_doc2.run = "Success"
         mock_doc2.chunk_count = 3
 
-        mock_dataset.list_documents.return_value = [mock_doc1, mock_doc2]
+        mock_get_all_documents.return_value = [mock_doc1, mock_doc2]
         metadata_map = {"doc-1": {}}  # Only doc-1 in metadata_map
 
         result = display_final_summary(mock_dataset, metadata_map)
@@ -67,8 +73,11 @@ class TestDisplayFinalSummary(unittest.TestCase):
         self.assertIn("Included.pdf", output)
         self.assertNotIn("NotIncluded.pdf", output)
 
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_empty_metadata_map(self, mock_stdout):
+    def test_display_summary_empty_metadata_map(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
         mock_doc = Mock()
         mock_doc.id = "doc-1"
@@ -76,7 +85,7 @@ class TestDisplayFinalSummary(unittest.TestCase):
         mock_doc.run = "Success"
         mock_doc.chunk_count = 10
 
-        mock_dataset.list_documents.return_value = [mock_doc]
+        mock_get_all_documents.return_value = [mock_doc]
         metadata_map = {}  # Empty map
 
         result = display_final_summary(mock_dataset, metadata_map)
@@ -87,10 +96,13 @@ class TestDisplayFinalSummary(unittest.TestCase):
         self.assertNotIn("Document.pdf", output)
         self.assertIn("Process completed successfully", output)
 
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_no_documents(self, mock_stdout):
+    def test_display_summary_no_documents(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
-        mock_dataset.list_documents.return_value = []
+        mock_get_all_documents.return_value = []
         metadata_map = {"doc-1": {}}
 
         result = display_final_summary(mock_dataset, metadata_map)
@@ -100,11 +112,14 @@ class TestDisplayFinalSummary(unittest.TestCase):
         self.assertIn("Final Summary:", output)
         self.assertIn("Process completed successfully", output)
 
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_handles_exception(self, mock_stdout):
+    def test_display_summary_handles_exception(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
         error_message = "API connection failed"
-        mock_dataset.list_documents.side_effect = Exception(error_message)
+        mock_get_all_documents.side_effect = Exception(error_message)
         metadata_map = {"doc-1": {}}
 
         result = display_final_summary(mock_dataset, metadata_map)
@@ -114,10 +129,13 @@ class TestDisplayFinalSummary(unittest.TestCase):
         self.assertIn("Could not retrieve final document status:", output)
         self.assertIn(error_message, output)
 
+    @patch("ingest_ragflow.rag.reporting.get_all_documents")
     @patch("sys.stdout", new_callable=StringIO)
-    def test_display_summary_handles_attribute_error(self, mock_stdout):
+    def test_display_summary_handles_attribute_error(
+        self, mock_stdout, mock_get_all_documents
+    ):
         mock_dataset = Mock(spec=DataSet)
-        mock_dataset.list_documents.side_effect = AttributeError(
+        mock_get_all_documents.side_effect = AttributeError(
             "Missing attribute"
         )
         metadata_map = {"doc-1": {}}
