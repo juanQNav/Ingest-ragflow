@@ -396,6 +396,7 @@ async def monitor_parsing(
                         if on_document_done:
                             # Execute callback with document info
                             await on_document_done(doc.id, doc.name, doc.run)
+                            progress_bars[doc.id].close()
 
                     if doc.run == "RUNNING":
                         all_done = False
@@ -463,7 +464,10 @@ async def monitor_parsing(
         tqdm.write(f"[WARNING] Could not check final document status: {e}")
 
     for bar in progress_bars.values():
-        bar.close()
+        try:
+            bar.close()
+        except Exception:
+            pass
 
     if consecutive_errors > 0 and consecutive_errors <= max_retries:
         tqdm.write("[INFO] Monitoring recovered from network errors.")
