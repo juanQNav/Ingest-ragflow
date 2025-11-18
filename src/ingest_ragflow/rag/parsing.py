@@ -114,7 +114,7 @@ def process_item(
 
         with lock:
             tqdm.write(
-                f"[Proc] item {os.path.basename(file_path)}"
+                f"\n[PROC] item {os.path.basename(file_path)}"
                 " processed successfully."
             )
 
@@ -403,8 +403,8 @@ async def monitor_parsing(
                 else:
                     if doc.run == "UNSTART":
                         tqdm.write(
-                            f"[INFO] Retrying to parse document {doc.name}\
-                            (ID: {doc.id})..."
+                            f"[INFO] Retrying to parse document {doc.name}"
+                            " (ID: {doc.id})..."
                         )
                         dataset.async_parse_documents([doc.id])
 
