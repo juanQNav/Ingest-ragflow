@@ -408,7 +408,8 @@ class TestMonitorParsing(IsolatedAsyncioTestCase):
     ):
         import requests.exceptions
 
-        # First call succeeds for get_documents_map, then all fail in monitoring loop
+        # First call succeeds for get_documents_map, then all
+        # fail in monitoring loop
         # Plus one final attempt to check status at the end
         mock_get_docs.side_effect = [
             [DummyDoc("doc1", "file1.pdf")],  # get_documents_map
@@ -439,7 +440,8 @@ class TestMonitorParsing(IsolatedAsyncioTestCase):
         self.assertEqual(len(self.callback_calls), 0)
 
         # Verify get_all_documents was called:
-        # 1 for get_documents_map + 3 for monitoring (initial + 2 retries) + 1 for final check
+        # 1 for get_documents_map + 3 for monitoring [...]
+        # (initial + 2 retries) + 1 for final check
         self.assertEqual(mock_get_docs.call_count, 5)
 
     @mock.patch("ingest_ragflow.rag.parsing.get_all_documents")
@@ -457,7 +459,8 @@ class TestMonitorParsing(IsolatedAsyncioTestCase):
             DummyDoc("doc2", "file2.pdf", 1.0, "DONE"),
         ]
 
-        # First for get_documents_map, then for monitoring (2 attempts due to retry)
+        # First for get_documents_map, then for
+        # monitoring (2 attempts due to retry)
         mock_get_docs.side_effect = [
             [DummyDoc("doc1", "file1.pdf"), DummyDoc("doc2", "file2.pdf")],
             done_docs,  # First attempt - callback will raise ValueError
@@ -468,7 +471,8 @@ class TestMonitorParsing(IsolatedAsyncioTestCase):
         mock_tqdm.return_value.refresh = mock.Mock()
         mock_tqdm.return_value.close = mock.Mock()
 
-        # The implementation catches callback exceptions and treats them as network errors
+        # The implementation catches callback exceptions
+        # and treats them as network errors
         # It will retry and eventually complete
         await rp.monitor_parsing(
             dataset=self.mock_dataset,
