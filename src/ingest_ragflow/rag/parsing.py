@@ -3,7 +3,7 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Callable, Optional
 
 import requests
 import requests.exceptions
@@ -15,6 +15,7 @@ from ingest_ragflow.dspace_api.files import retrieve_item_file
 from ingest_ragflow.dspace_api.items import get_items, get_items_ids
 from ingest_ragflow.rag.files import (
     generate_document_list,
+    get_all_documents,
     rename_document_name,
 )
 
@@ -334,7 +335,7 @@ def get_documents_map(
         Dictionary mapping document IDs to document names.
     """
     documents_map = {}
-    for doc in dataset.list_documents():
+    for doc in get_all_documents(dataset=dataset):
         if doc.id in document_ids:
             documents_map[doc.id] = doc.name
     return documents_map
@@ -346,6 +347,7 @@ async def monitor_parsing(
     poll_interval: float = 2.5,
     max_retries: int = 5,
     retry_delay: float = 10.0,
+    on_document_done: Optional[Callable] = None,
 ) -> None:
     """
     Monitor the parsing progress of documents in RagFlow.
@@ -356,6 +358,7 @@ async def monitor_parsing(
         poll_interval: Interval (in seconds) between status checks.
         max_retries: Maximum number of retries for network errors.
         retry_delay: Delay (in seconds) before retrying after an error.
+        on_document_done: Callback function when a document finishes parsing.
     """
     documents_map = get_documents_map(dataset, document_ids)
     progress_bars = {
@@ -368,6 +371,9 @@ async def monitor_parsing(
         for i, (doc_id, doc_name) in enumerate(documents_map.items())
     }
 
+    # Track which documents are already done and processed
+    processed_documents = set()
+
     all_done = False
     consecutive_errors = 0
 
@@ -375,7 +381,7 @@ async def monitor_parsing(
         all_done = True
 
         try:
-            documents = dataset.list_documents()
+            documents = get_all_documents(dataset=dataset)
             consecutive_errors = 0  # Reset error counter on success
 
             for doc in documents:
@@ -383,6 +389,13 @@ async def monitor_parsing(
                     progress = doc.progress * 100
                     progress_bars[doc.id].n = round(progress, 2)
                     progress_bars[doc.id].refresh()
+
+                    # Check if document just finished
+                    if doc.run == "DONE" and doc.id not in processed_documents:
+                        processed_documents.add(doc.id)
+                        if on_document_done:
+                            # Execute callback with document info
+                            await on_document_done(doc.id, doc.name, doc.run)
 
                     if doc.run == "RUNNING":
                         all_done = False
@@ -433,6 +446,22 @@ async def monitor_parsing(
                     "may still be processing."
                 )
                 break
+    # Process any remaining documents that might have finished
+    # during the last iteration but weren't processed
+    try:
+        documents = get_all_documents(dataset=dataset)
+        for doc in documents:
+            if (
+                doc.id in document_ids
+                and doc.run == "DONE"
+                and doc.id not in processed_documents
+            ):
+                processed_documents.add(doc.id)
+                if on_document_done:
+                    await on_document_done(doc.id, doc.name, doc.run)
+    except Exception as e:
+        tqdm.write(f"[WARNING] Could not check final document status: {e}")
+
     for bar in progress_bars.values():
         bar.close()
 
@@ -457,7 +486,7 @@ def filter_done_documents(dataset: DataSet, metadata_map: dict) -> dict:
         DONE status in RAGFlow.
     """
     try:
-        documents = dataset.list_documents()
+        documents = get_all_documents(dataset=dataset)
         done_document_ids = {
             doc.id for doc in documents if getattr(doc, "run", None) == "DONE"
         }
