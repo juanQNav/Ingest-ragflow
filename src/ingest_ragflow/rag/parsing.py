@@ -50,8 +50,8 @@ def upload_and_parse_file(
 
     with lock:
         tqdm.write(
-            f"[PROC] Item {os.path.basename(file_path)} \
-                   processed successfully."
+            f"[PROC] Item {os.path.basename(file_path)}"
+            " processed successfully."
         )
 
 
@@ -114,8 +114,8 @@ def process_item(
 
         with lock:
             tqdm.write(
-                f"[Proc] item {os.path.basename(file_path)} \
-                processed successfully."
+                f"[Proc] item {os.path.basename(file_path)}"
+                " processed successfully."
             )
 
         return documents_id, item_metadata
