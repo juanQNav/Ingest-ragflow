@@ -1,6 +1,4 @@
-# Ingest-ragflow
-
-[![codecov](https://codecov.io/gh/juanQNav/Ingest-Ragflow/branch/main/graph/badge.svg)](https://codecov.io/gh/juanQNav/Ingest-Ragflow)
+# Ingest-ragflow [![codecov](https://codecov.io/gh/juanQNav/Ingest-Ragflow/branch/main/graph/badge.svg)](https://codecov.io/gh/juanQNav/Ingest-Ragflow)
 
 This repository contains code for integrating and using various components,
 including the DSpace API and a knowledge base of RagFlow. The structure is
