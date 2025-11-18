@@ -1,5 +1,7 @@
 from ragflow_sdk.modules.dataset import DataSet
 
+from ingest_ragflow.rag.files import get_all_documents
+
 
 def display_final_summary(dataset: DataSet, metadata_map: dict) -> bool:
     """
@@ -10,7 +12,7 @@ def display_final_summary(dataset: DataSet, metadata_map: dict) -> bool:
         metadata_map:
     """
     try:
-        documents = dataset.list_documents()
+        documents = get_all_documents(dataset=dataset)
         documents = [doc for doc in documents if doc.id in metadata_map]
         print("\nFinal Summary: ")
         print("-" * 50)
