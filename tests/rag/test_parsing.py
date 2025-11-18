@@ -21,8 +21,8 @@ class DummyDataset:
     def upload_documents(self, docs):
         # Convert dicts to DummyDoc simulating real objects
         for doc in docs:
-            doc_id = doc["displayed_name"].split(".")[0]
-            self._docs.append(DummyDoc(doc_id, doc["displayed_name"]))
+            doc_id = doc["display_name"].split(".")[0]
+            self._docs.append(DummyDoc(doc_id, doc["display_name"]))
 
     def list_documents(self):
         return self._docs
@@ -30,7 +30,7 @@ class DummyDataset:
     def async_parse_documents(self, ids):
         # Simulates document parsing
         for doc in self._docs:
-            if doc["displayed_name"].split(".")[0] in ids:
+            if doc["display_name"].split(".")[0] in ids:
                 # Just update the doc in place, no need to create DummyDoc
                 doc["progress"] = 1
                 doc["run"] = "DONE"
@@ -46,7 +46,7 @@ class TestParsing(TestCase):
     @mock.patch("tqdm.tqdm", lambda x, **kwargs: x)
     def test_upload_and_parse_file_success(self, mock_gen_docs):
         mock_gen_docs.return_value = [
-            {"displayed_name": "file.pdf", "blob": b"data"}
+            {"display_name": "file.pdf", "blob": b"data"}
         ]
 
         rp.upload_and_parse_file(
@@ -64,7 +64,7 @@ class TestParsing(TestCase):
     def test_process_item_success(self, mock_gen_docs, mock_retrieve):
         mock_retrieve.return_value = ("file.pdf", {"uuid": "id1"})
         mock_gen_docs.return_value = [
-            {"displayed_name": "file.pdf", "blob": b"data"}
+            {"display_name": "file.pdf", "blob": b"data"}
         ]
 
         doc_id, metadata = rp.process_item(

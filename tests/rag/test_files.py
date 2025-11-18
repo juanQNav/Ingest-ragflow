@@ -32,9 +32,9 @@ class TestRagFiles(TestCase):
         files = ["/path/file1.pdf", "/path/file2.pdf"]
         result = rf.generate_document_list(files)
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["displayed_name"], "file1.pdf")
+        self.assertEqual(result[0]["display_name"], "file1.pdf")
         self.assertEqual(result[0]["blob"], b"data1")
-        self.assertEqual(result[1]["displayed_name"], "file2.pdf")
+        self.assertEqual(result[1]["display_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
 
     @mock.patch("ingest_ragflow.rag.files.read_binary_file")
@@ -44,9 +44,9 @@ class TestRagFiles(TestCase):
         pdf_files = ["/path/file1.pdf", "/path/file2.pdf"]
         result = rf.process_files_in_parallel(pdf_files)
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["displayed_name"], "file1.pdf")
+        self.assertEqual(result[0]["display_name"], "file1.pdf")
         self.assertEqual(result[0]["blob"], b"data1")
-        self.assertEqual(result[1]["displayed_name"], "file2.pdf")
+        self.assertEqual(result[1]["display_name"], "file2.pdf")
         self.assertEqual(result[1]["blob"], b"data2")
 
     def test_generate_ragflow_id_docname_map_with_multiple_documents(self):

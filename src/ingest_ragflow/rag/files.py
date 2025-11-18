@@ -43,12 +43,12 @@ def generate_document_list(files_paths: list[str]) -> list[dict[str, object]]:
 
     Returns:
         List of dictionaries with:
-            - displayed_name: File name.
+            - display_name: File name.
             - blob: File content as bytes.
     """
     return [
         {
-            "displayed_name": os.path.basename(file_path),
+            "display_name": os.path.basename(file_path),
             "blob": read_binary_file(file_path),
         }
         for file_path in files_paths
@@ -64,13 +64,13 @@ def process_files_in_parallel(pdf_files: list[str]) -> list[dict[str, object]]:
 
     Returns:
         List of dictionaries with:
-            - displayed_name: File name.
+            - display_name: File name.
             - blob: File content as bytes.
     """
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(read_binary_file, pdf_files))
         return [
-            {"displayed_name": os.path.basename(pdf), "blob": blob}
+            {"display_name": os.path.basename(pdf), "blob": blob}
             for pdf, blob in zip(pdf_files, results)
         ]
 
